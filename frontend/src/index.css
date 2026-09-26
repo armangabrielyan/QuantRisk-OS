@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+:root {
+  --bg: #0f1117;
+  --panel: #161b27;
+  --border: #1e2635;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --accent: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--panel);
+}
+::-webkit-scrollbar-thumb {
+  background: #2d3748;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4a5568;
+}
+
+/* Monospace numbers */
+.num {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Panel styles */
+.panel {
+  background-color: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+/* Status badges */
+.badge-pass {
+  @apply text-xs font-medium px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30;
+}
+.badge-fail {
+  @apply text-xs font-medium px-2 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30;
+}
+.badge-warn {
+  @apply text-xs font-medium px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30;
+}
+
+/* Input styling */
+.input-dark {
+  @apply bg-[#0f1117] border border-[#1e2635] rounded-md px-3 py-2 text-sm text-slate-200 
+         focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500
+         placeholder:text-slate-600 w-full;
+}
+
+/* Table styling */
+.table-dark {
+  @apply w-full text-sm;
+}
+.table-dark th {
+  @apply text-xs font-medium text-slate-500 uppercase tracking-wider pb-2 border-b border-[#1e2635] text-left;
+}
+.table-dark td {
+  @apply py-2 border-b border-[#1e2635]/50;
+}
+.table-dark tr:last-child td {
+  @apply border-b-0;
+}
+
+/* KaTeX overrides for dark theme */
+.katex {
+  color: #e2e8f0 !important;
+}
+
+/* Chart container */
+.chart-container {
+  @apply bg-[#0f1117] rounded-lg p-2;
+}
