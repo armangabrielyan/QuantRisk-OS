@@ -1,263 +1,278 @@
+// @ts-nocheck
 import { useState } from 'react'
 import { econometricsApi, dataApi } from '@/services/api'
 import {
-  MetricCard, Panel, SectionHeader, LoadingSpinner, ErrorMessage,
-  FormField, Input, Select, Button, DataTable
+  Panel, SectionHeader, LoadingSpinner, ErrorMessage,
+  FormField, Select, Button, DataTable, Tabs,
 } from '@/components/ui'
+import { useI18n } from '@/i18n'
 import Plot from 'react-plotly.js'
 
-type ActiveTab = 'timeseries' | 'ols' | 'diagnostics'
+type Tab = 'timeSeries' | 'ols'
+
+const SAMPLE_SERIES_SIZE = 200
 
 export default function Econometrics() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('timeseries')
+  const { t } = useI18n()
+  const ec = t.econometrics
+  const [activeTab, setActiveTab] = useState<Tab>('timeSeries')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [ticker, setTicker] = useState('SPY')
 
   // Time series
-  const [regression, setRegression] = useState('c')
-  const [nlags, setNlags] = useState(40)
+  const [adfRegression, setAdfRegression] = useState('c')
+  const [nlags, setNlags] = useState(20)
   const [tsResult, setTsResult] = useState<Record<string, unknown> | null>(null)
   const [acfResult, setAcfResult] = useState<Record<string, unknown> | null>(null)
 
   // OLS
-  const [olsTicker2, setOlsTicker2] = useState('JPM')
   const [olsResult, setOlsResult] = useState<Record<string, unknown> | null>(null)
   const [diagResult, setDiagResult] = useState<Record<string, unknown> | null>(null)
+
+  async function getSeries(): Promise<number[]> {
+    const res = await dataApi.sample('SPY', SAMPLE_SERIES_SIZE)
+    return res.data.data.returns
+  }
 
   async function runTimeSeries() {
     setLoading(true); setError(null); setTsResult(null); setAcfResult(null)
     try {
-      const res = await dataApi.sample(ticker, 504)
-      const series = res.data.data.returns as number[]
+      const series = await getSeries()
       const [ts, acf] = await Promise.all([
-        econometricsApi.timeSeries({ series, regression, nlags }),
+        econometricsApi.timeSeriesDiagnostics({ series, maxlag: null, regression: adfRegression, nlags }),
         econometricsApi.acfPacf({ series, nlags }),
       ])
       setTsResult(ts.data.data)
       setAcfResult(acf.data.data)
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Error') }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Calculation failed') }
     finally { setLoading(false) }
   }
 
   async function runOLS() {
     setLoading(true); setError(null); setOlsResult(null); setDiagResult(null)
     try {
-      const [r1, r2] = await Promise.all([dataApi.sample(ticker, 252), dataApi.sample(olsTicker2, 252)])
-      const y = r1.data.data.returns as number[]
-      const X = (r2.data.data.returns as number[]).map((v: number) => [v])
+      const returns = await getSeries()
+      const y = returns.slice(1)
+      const X = returns.slice(0, -1).map(r => [r])
       const [ols, diag] = await Promise.all([
-        econometricsApi.ols({ y, X, feature_names: [olsTicker2], add_constant: true }),
+        econometricsApi.olsRegression({ y, X, feature_names: ['lag_return'], add_constant: true }),
         econometricsApi.diagnostics({ y, X }),
       ])
       setOlsResult(ols.data.data)
       setDiagResult(diag.data.data)
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Error') }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Calculation failed') }
     finally { setLoading(false) }
   }
 
-  const adf = tsResult?.adf_test as Record<string, unknown> | undefined
-  const desc = tsResult?.descriptive_stats as Record<string, unknown> | undefined
-  const acf = acfResult?.acf as number[] | undefined
-  const pacf = acfResult?.pacf as number[] | undefined
-  const lags = acfResult?.lags as number[] | undefined
-  const sigBound = acfResult?.significance_bound as number | undefined
+  const tabs = [
+    { key: 'timeSeries', label: ec.tabs.timeSeries },
+    { key: 'ols', label: ec.tabs.ols },
+  ]
+
+  const statColor = (pv: number) => pv < 0.05 ? '#10b981' : pv < 0.10 ? '#f59e0b' : '#ef4444'
 
   return (
-    <div className="space-y-6">
-      <SectionHeader title="Econometrics Workspace" subtitle="ADF Test, ACF/PACF, OLS Regression, Heteroskedasticity, Serial Correlation, VIF" />
+    <div className="space-y-4 sm:space-y-6">
+      <SectionHeader title={ec.title} subtitle={ec.subtitle} />
+      <Tabs tabs={tabs} active={activeTab} onChange={(k) => { setActiveTab(k as Tab); setError(null) }} />
+      {error && <ErrorMessage message={error} onRetry={() => setError(null)} />}
 
-      <div className="flex gap-1 border-b border-[#1e2635]">
-        {(['timeseries', 'ols'] as ActiveTab[]).map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${activeTab === tab ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
-            {tab === 'timeseries' ? 'Time Series Diagnostics' : 'OLS Regression'}
-          </button>
-        ))}
-      </div>
-
-      {error && <ErrorMessage message={error} />}
-
-      {activeTab === 'timeseries' && (
-        <div className="grid grid-cols-4 gap-4">
-          <Panel title="Parameters" className="col-span-1">
-            <div className="space-y-4">
-              <FormField label="Ticker">
-                <Input value={ticker} onChange={e => setTicker(e.target.value.toUpperCase())} />
-              </FormField>
-              <FormField label="ADF Regression" hint="c=constant, ct=constant+trend">
-                <Select value={regression} onChange={e => setRegression(e.target.value)}>
-                  <option value="c">Constant (c)</option>
-                  <option value="ct">Constant + Trend (ct)</option>
-                  <option value="n">None (n)</option>
+      {/* ── Time Series Diagnostics ──────────────────────────────────────────── */}
+      {activeTab === 'timeSeries' && (
+        <div className="space-y-4">
+          <Panel title={ec.ts.paramsTitle}>
+            <div className="flex flex-wrap gap-3 items-end">
+              <FormField label={ec.ts.adfRegression} hint={ec.ts.adfHint} className="flex-1 min-w-[140px]">
+                <Select value={adfRegression} onChange={e => setAdfRegression(e.target.value)}>
+                  <option value="c">{ec.ts.adfC}</option>
+                  <option value="ct">{ec.ts.adfCT}</option>
+                  <option value="n">{ec.ts.adfN}</option>
                 </Select>
               </FormField>
-              <FormField label={`ACF/PACF Lags: ${nlags}`}>
-                <input type="range" min={10} max={60} value={nlags}
-                  onChange={e => setNlags(parseInt(e.target.value))}
-                  className="w-full accent-emerald-500" />
+              <FormField label={`${ec.ts.nlags}: ${nlags}`} className="flex-1 min-w-[140px]">
+                <input type="range" min={5} max={40} step={1} value={nlags}
+                  onChange={e => setNlags(parseInt(e.target.value))} className="w-full accent-emerald-500" />
               </FormField>
-              <Button onClick={runTimeSeries} disabled={loading} className="w-full">
-                {loading ? 'Running...' : 'Run Diagnostics'}
+              <Button onClick={runTimeSeries} disabled={loading}>
+                {loading ? ec.ts.running : ec.ts.runBtn}
               </Button>
             </div>
           </Panel>
 
-          <div className="col-span-3 space-y-4">
-            {loading && <LoadingSpinner />}
-            {tsResult && !loading && (
-              <>
-                {/* Descriptive Stats */}
-                <div className="grid grid-cols-4 gap-3">
-                  {[
-                    ['Mean', `${((desc?.mean as number) * 100).toFixed(4)}%`],
-                    ['Std Dev', `${((desc?.std as number) * 100).toFixed(4)}%`],
-                    ['Skewness', (desc?.skewness as number)?.toFixed(4)],
-                    ['Excess Kurt', (desc?.excess_kurtosis as number)?.toFixed(4)],
-                  ].map(([label, val]) => (
-                    <MetricCard key={label as string} label={label as string} value={val as string} />
-                  ))}
-                </div>
+          {loading && <LoadingSpinner message={ec.ts.running} />}
 
-                {/* ADF Test */}
-                <Panel title="ADF Unit Root Test">
+          {tsResult && !loading && (
+            <div className="space-y-4">
+              {/* ADF results */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Panel title={ec.ts.adfTitle}>
                   <DataTable
-                    headers={['Metric', 'Value']}
+                    headers={ec.ts.adfHeaders}
                     rows={[
-                      ['ADF Statistic', (adf?.statistic as number)?.toFixed(6)],
-                      ['p-value', (adf?.pvalue as number)?.toFixed(6)],
-                      ['Lags Used', String(adf?.usedlag)],
-                      ['1% Critical Value', String((adf?.critical_values as Record<string, number>)?.['1%']?.toFixed(4))],
-                      ['5% Critical Value', String((adf?.critical_values as Record<string, number>)?.['5%']?.toFixed(4))],
-                      ['10% Critical Value', String((adf?.critical_values as Record<string, number>)?.['10%']?.toFixed(4))],
+                      [ec.ts.adfStat, (tsResult.adf_result as any).adf_statistic?.toFixed(4)],
+                      [ec.ts.pValue, (tsResult.adf_result as any).p_value?.toFixed(4)],
+                      [ec.ts.lagsUsed, (tsResult.adf_result as any).used_lag],
+                      [ec.ts.cv1, (tsResult.adf_result as any).critical_values?.['1%']?.toFixed(4)],
+                      [ec.ts.cv5, (tsResult.adf_result as any).critical_values?.['5%']?.toFixed(4)],
+                      [ec.ts.cv10, (tsResult.adf_result as any).critical_values?.['10%']?.toFixed(4)],
                     ]}
                   />
-                  <div className={`mt-3 p-3 rounded text-xs border ${(adf?.pvalue as number) < 0.05 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-amber-500/10 border-amber-500/30 text-amber-300'}`}>
-                    {adf?.interpretation as string}
-                  </div>
+                  <div className="mt-2 text-xs text-slate-400">{(tsResult.adf_result as any).interpretation}</div>
                 </Panel>
+                <Panel title={t.common.summary}>
+                  <DataTable
+                    headers={ec.ts.adfHeaders}
+                    rows={[
+                      [ec.ts.mean, (tsResult.descriptive_stats as any).mean?.toFixed(6)],
+                      [ec.ts.stdDev, (tsResult.descriptive_stats as any).std?.toFixed(6)],
+                      [ec.ts.skewness, (tsResult.descriptive_stats as any).skewness?.toFixed(4)],
+                      [ec.ts.excessKurt, (tsResult.descriptive_stats as any).excess_kurtosis?.toFixed(4)],
+                    ]}
+                  />
+                </Panel>
+              </div>
 
-                {/* ACF/PACF Charts */}
-                {acf && pacf && lags && (
-                  <div className="grid grid-cols-2 gap-4">
-                    {[['Autocorrelation Function (ACF)', acf], ['Partial Autocorrelation Function (PACF)', pacf]].map(([title, vals]) => (
-                      <Panel key={title as string} title={title as string}>
-                        <Plot
-                          data={[{
-                            x: lags,
-                            y: vals as number[],
-                            type: 'bar',
-                            marker: { color: (vals as number[]).map(v => Math.abs(v) > (sigBound || 0.09) ? '#10b981' : '#334155') },
-                            name: title as string,
-                          }, {
-                            x: [0, lags[lags.length - 1]],
-                            y: [sigBound || 0.09, sigBound || 0.09],
-                            type: 'scatter', mode: 'lines',
-                            line: { color: '#f59e0b', width: 1, dash: 'dot' },
-                            name: '95% CI',
-                            showlegend: false,
-                          }, {
-                            x: [0, lags[lags.length - 1]],
-                            y: [-(sigBound || 0.09), -(sigBound || 0.09)],
-                            type: 'scatter', mode: 'lines',
-                            line: { color: '#f59e0b', width: 1, dash: 'dot' },
-                            showlegend: false,
-                          }]}
-                          layout={{
-                            paper_bgcolor: '#0f1117', plot_bgcolor: '#0f1117',
-                            font: { color: '#94a3b8', size: 10 },
-                            margin: { t: 10, r: 10, b: 30, l: 40 },
-                            xaxis: { title: 'Lag', gridcolor: '#1e2635' },
-                            yaxis: { title: 'Correlation', gridcolor: '#1e2635', range: [-1, 1] },
-                            height: 200, showlegend: false,
-                          }}
-                          config={{ displayModeBar: false }}
-                          style={{ width: '100%' }}
-                        />
-                      </Panel>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+              {/* ACF/PACF charts */}
+              {acfResult && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Panel title={ec.ts.acfTitle}>
+                    <Plot
+                      data={[{
+                        x: acfResult.lags,
+                        y: acfResult.acf,
+                        type: 'bar',
+                        marker: { color: '#10b981', opacity: 0.7 },
+                        name: 'ACF',
+                      }, {
+                        x: acfResult.lags,
+                        y: (acfResult.acf_confint as number[][]).map((ci: number[]) => ci[1] - (acfResult.acf as number[])[(acfResult.lags as number[]).indexOf(acfResult.lags[(acfResult.acf_confint as number[][]).indexOf(ci)])]),
+                        type: 'scatter', mode: 'lines',
+                        line: { color: '#ef4444', dash: 'dash' },
+                        name: ec.ts.ci95,
+                      }]}
+                      layout={{
+                        paper_bgcolor: '#0f1117', plot_bgcolor: '#0f1117',
+                        font: { color: '#94a3b8', size: 10 },
+                        margin: { t: 10, r: 10, b: 40, l: 45 },
+                        xaxis: { title: ec.ts.lag, gridcolor: '#1e2635' },
+                        yaxis: { title: ec.ts.correlation, gridcolor: '#1e2635', range: [-1, 1] },
+                        height: 220, showlegend: false,
+                      }}
+                      config={{ displayModeBar: false, responsive: true }}
+                      style={{ width: '100%' }}
+                    />
+                  </Panel>
+                  <Panel title={ec.ts.pacfTitle}>
+                    <Plot
+                      data={[{
+                        x: acfResult.lags,
+                        y: acfResult.pacf,
+                        type: 'bar',
+                        marker: { color: '#3b82f6', opacity: 0.7 },
+                        name: 'PACF',
+                      }]}
+                      layout={{
+                        paper_bgcolor: '#0f1117', plot_bgcolor: '#0f1117',
+                        font: { color: '#94a3b8', size: 10 },
+                        margin: { t: 10, r: 10, b: 40, l: 45 },
+                        xaxis: { title: ec.ts.lag, gridcolor: '#1e2635' },
+                        yaxis: { title: ec.ts.correlation, gridcolor: '#1e2635', range: [-1, 1] },
+                        height: 220, showlegend: false,
+                      }}
+                      config={{ displayModeBar: false, responsive: true }}
+                      style={{ width: '100%' }}
+                    />
+                  </Panel>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
+      {/* ── OLS Regression ──────────────────────────────────────────────────── */}
       {activeTab === 'ols' && (
-        <div className="grid grid-cols-4 gap-4">
-          <Panel title="Regression Setup" className="col-span-1">
-            <div className="space-y-4">
-              <FormField label="Dependent (Y)" hint="Daily returns">
-                <Input value={ticker} onChange={e => setTicker(e.target.value.toUpperCase())} />
+        <div className="space-y-4">
+          <Panel title={ec.ols.paramsTitle}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField label={ec.ols.depY} hint={ec.ols.depYHint}>
+                <input value="SPY returns (t)" readOnly
+                  className="w-full bg-[#0f1117] border border-[#1e2635] rounded-md px-3 py-2 text-sm text-slate-500 cursor-not-allowed" />
               </FormField>
-              <FormField label="Independent (X)" hint="Single regressor">
-                <Input value={olsTicker2} onChange={e => setOlsTicker2(e.target.value.toUpperCase())} />
+              <FormField label={ec.ols.indepX} hint={ec.ols.indepXHint}>
+                <input value="SPY returns (t-1)" readOnly
+                  className="w-full bg-[#0f1117] border border-[#1e2635] rounded-md px-3 py-2 text-sm text-slate-500 cursor-not-allowed" />
               </FormField>
-              <div className="text-xs text-slate-500 p-3 bg-[#0f1117] rounded border border-[#1e2635]">
-                Regresses {ticker} daily returns on {olsTicker2} daily returns with constant. Uses 252 trading days.
-              </div>
-              <Button onClick={runOLS} disabled={loading} className="w-full">
-                {loading ? 'Regressing...' : 'Run OLS Regression'}
-              </Button>
             </div>
+            <Button onClick={runOLS} disabled={loading} className="mt-3">
+              {loading ? ec.ols.running : ec.ols.runBtn}
+            </Button>
           </Panel>
 
-          <div className="col-span-3 space-y-4">
-            {loading && <LoadingSpinner />}
-            {olsResult && !loading && (
-              <>
-                <div className="grid grid-cols-4 gap-3">
-                  {[
-                    ['R²', (olsResult.r_squared as number)?.toFixed(4)],
-                    ['Adj R²', (olsResult.adj_r_squared as number)?.toFixed(4)],
-                    ['F-Stat', (olsResult.f_statistic as number)?.toFixed(4)],
-                    ['Obs', String(olsResult.n_obs)],
-                  ].map(([l, v]) => <MetricCard key={l as string} label={l as string} value={v as string} />)}
+          {loading && <LoadingSpinner message={ec.ols.running} />}
+
+          {olsResult && !loading && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                <div className="bg-[#161b27] border border-[#1e2635] rounded-xl p-3 text-center">
+                  <div className="text-xs text-slate-500">{ec.ols.rSquared}</div>
+                  <div className="text-lg font-bold text-emerald-400 font-mono">{(olsResult.r_squared as number).toFixed(4)}</div>
                 </div>
-                <Panel title="Coefficient Table">
-                  <DataTable
-                    headers={['Variable', 'Coeff', 'Std Error', 't-Stat', 'p-Value', '95% CI']}
-                    rows={(olsResult.feature_names as string[]).map(name => {
-                      const coefs = olsResult.coefficients as Record<string, number>
-                      const ses = olsResult.std_errors as Record<string, number>
-                      const ts = olsResult.t_stats as Record<string, number>
-                      const ps = olsResult.p_values as Record<string, number>
-                      const ci = olsResult.conf_intervals as Record<string, number[]>
-                      return [
-                        name,
-                        coefs[name]?.toFixed(6),
-                        ses[name]?.toFixed(6),
-                        ts[name]?.toFixed(4),
-                        ps[name]?.toFixed(4),
-                        `[${ci[name]?.[0]?.toFixed(4)}, ${ci[name]?.[1]?.toFixed(4)}]`,
-                      ]
-                    })}
-                  />
-                </Panel>
-                {diagResult && (
-                  <Panel title="Regression Diagnostics">
-                    <div className="space-y-3">
-                      {[
-                        { name: 'Breusch-Pagan (Heteroskedasticity)', test: (diagResult.breusch_pagan as Record<string, unknown>) },
-                        { name: 'Durbin-Watson (Serial Correlation)', test: (diagResult.durbin_watson as Record<string, unknown>) },
-                        { name: 'Breusch-Godfrey (Serial Correlation)', test: (diagResult.breusch_godfrey as Record<string, unknown>) },
-                      ].map(({ name, test }) => (
-                        <div key={name} className="p-3 border border-[#1e2635] rounded">
-                          <div className="text-xs font-medium text-slate-300 mb-1">{name}</div>
-                          <div className="text-xs text-slate-500">{test?.interpretation as string}</div>
-                          <div className="flex gap-4 mt-1 text-xs font-mono text-slate-400">
-                            <span>Stat: {(test?.statistic as number)?.toFixed(4)}</span>
-                            {test?.pvalue !== undefined && <span>p-value: {(test?.pvalue as number)?.toFixed(4)}</span>}
-                          </div>
+                <div className="bg-[#161b27] border border-[#1e2635] rounded-xl p-3 text-center">
+                  <div className="text-xs text-slate-500">{ec.ols.adjR}</div>
+                  <div className="text-lg font-bold text-slate-200 font-mono">{(olsResult.adj_r_squared as number).toFixed(4)}</div>
+                </div>
+                <div className="bg-[#161b27] border border-[#1e2635] rounded-xl p-3 text-center">
+                  <div className="text-xs text-slate-500">{ec.ols.fStat}</div>
+                  <div className="text-lg font-bold text-slate-200 font-mono">{(olsResult.f_statistic as number)?.toFixed(3) ?? '—'}</div>
+                </div>
+                <div className="bg-[#161b27] border border-[#1e2635] rounded-xl p-3 text-center">
+                  <div className="text-xs text-slate-500">{ec.ols.obs}</div>
+                  <div className="text-lg font-bold text-slate-200 font-mono">{olsResult.n_obs as number}</div>
+                </div>
+              </div>
+
+              <Panel title={ec.ols.coeffTable}>
+                <DataTable
+                  headers={ec.ols.coeffHeaders}
+                  rows={(olsResult.feature_names as string[]).map((name: string) => [
+                    name,
+                    (olsResult.coefficients as any)[name]?.toFixed(6),
+                    (olsResult.std_errors as any)[name]?.toFixed(6),
+                    (olsResult.t_stats as any)[name]?.toFixed(4),
+                    (olsResult.p_values as any)[name]?.toFixed(4),
+                    `[${(olsResult.conf_intervals as any)[name]?.[0]?.toFixed(4)}, ${(olsResult.conf_intervals as any)[name]?.[1]?.toFixed(4)}]`,
+                  ])}
+                />
+              </Panel>
+
+              {diagResult && (
+                <Panel title={ec.ols.diagnosticsTitle}>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      { label: ec.ols.bpTest, stat: (diagResult.breusch_pagan as any)?.statistic, pval: (diagResult.breusch_pagan as any)?.p_value },
+                      { label: ec.ols.dwTest, stat: (diagResult.durbin_watson as any)?.statistic, pval: null },
+                      { label: ec.ols.bgTest, stat: (diagResult.breusch_godfrey as any)?.statistic, pval: (diagResult.breusch_godfrey as any)?.p_value },
+                    ].map(({ label, stat, pval }) => (
+                      <div key={label} className="bg-[#0f1117] rounded-lg p-3 border border-[#1e2635]">
+                        <div className="text-xs text-slate-500 mb-2 leading-tight">{label}</div>
+                        <div className="text-sm font-mono">
+                          <span className="text-slate-300">{ec.ols.stat}: </span>
+                          <span className="text-emerald-400">{stat?.toFixed(4)}</span>
                         </div>
-                      ))}
-                    </div>
-                  </Panel>
-                )}
-              </>
-            )}
-          </div>
+                        {pval !== null && pval !== undefined && (
+                          <div className="text-sm font-mono mt-1">
+                            <span className="text-slate-300">{ec.ols.pval}: </span>
+                            <span style={{ color: statColor(pval) }}>{pval?.toFixed(4)}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </Panel>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

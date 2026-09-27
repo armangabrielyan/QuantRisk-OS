@@ -4,7 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
 :root {
   --bg: #0f1117;
   --panel: #161b27;
@@ -20,6 +19,11 @@
   box-sizing: border-box;
 }
 
+html {
+  /* Prevent font scaling on orientation change */
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background-color: var(--bg);
   color: var(--text);
@@ -27,9 +31,11 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  /* Prevent horizontal scroll at body level */
+  overflow-x: hidden;
 }
 
-/* Scrollbar styling */
+/* ── Scrollbar styling ─────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -45,13 +51,45 @@ body {
   background: #4a5568;
 }
 
-/* Monospace numbers */
+/* Hide scrollbar utility (for tab overflow) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Typography ────────────────────────────────────────────────────────────── */
 .num {
   font-family: 'JetBrains Mono', monospace;
   font-variant-numeric: tabular-nums;
 }
 
-/* Panel styles */
+/* ── Mobile range input ────────────────────────────────────────────────────── */
+input[type='range'] {
+  height: 6px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+input[type='range']::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+}
+
+/* ── Touch targets — ensure minimum 44px for interactive elements ──────────── */
+@media (max-width: 768px) {
+  button, a, select, input {
+    min-height: 40px;
+  }
+  /* Tables in tight containers scroll horizontally */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ── Panel styles ──────────────────────────────────────────────────────────── */
 .panel {
   background-color: var(--panel);
   border: 1px solid var(--border);
@@ -59,7 +97,7 @@ body {
   padding: 16px;
 }
 
-/* Status badges */
+/* ── Status badges ─────────────────────────────────────────────────────────── */
 .badge-pass {
   @apply text-xs font-medium px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30;
 }
@@ -70,14 +108,14 @@ body {
   @apply text-xs font-medium px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30;
 }
 
-/* Input styling */
+/* ── Input styling ─────────────────────────────────────────────────────────── */
 .input-dark {
-  @apply bg-[#0f1117] border border-[#1e2635] rounded-md px-3 py-2 text-sm text-slate-200 
+  @apply bg-[#0f1117] border border-[#1e2635] rounded-md px-3 py-2 text-sm text-slate-200
          focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500
-         placeholder:text-slate-600 w-full;
+         placeholder:text-slate-600 w-full min-h-[40px];
 }
 
-/* Table styling */
+/* ── Table styling ─────────────────────────────────────────────────────────── */
 .table-dark {
   @apply w-full text-sm;
 }
@@ -91,12 +129,19 @@ body {
   @apply border-b-0;
 }
 
-/* KaTeX overrides for dark theme */
+/* ── KaTeX overrides for dark theme ───────────────────────────────────────── */
 .katex {
   color: #e2e8f0 !important;
 }
 
-/* Chart container */
+/* ── Chart container ───────────────────────────────────────────────────────── */
 .chart-container {
   @apply bg-[#0f1117] rounded-lg p-2;
+}
+
+/* ── Plotly responsive ─────────────────────────────────────────────────────── */
+.js-plotly-plot,
+.plotly,
+.plot-container {
+  max-width: 100% !important;
 }
