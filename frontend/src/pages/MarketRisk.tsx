@@ -473,12 +473,12 @@ export default function MarketRisk() {
             {backtestResult && !loading && (
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-                  <MetricCard label={t.newFeatures.exceptions} value={String(backtestResult.exceptions)} />
-                  <MetricCard label={t.newFeatures.expectedExceptions} value={String(backtestResult.expected_exceptions)} />
-                  <MetricCard label={t.newFeatures.exceptionRate} value={fmtPct((backtestResult.exception_rate as number) * 100)} />
-                  <MetricCard label={t.newFeatures.kupiecStat} value={(backtestResult.kupiec_stat as number).toFixed(4)} />
-                  <MetricCard label={t.newFeatures.pValue} value={(backtestResult.p_value as number).toFixed(4)} />
-                  <MetricCard label={t.newFeatures.kupiecStatus} value={backtestResult.status as string} status={backtestResult.status === 'Accept' ? 'pass' : 'fail'} />
+                  <MetricCard label={t.newFeatures.exceptions} value={String(backtestResult?.exceptions)} />
+                  <MetricCard label={t.newFeatures.expectedExceptions} value={String(backtestResult?.expected_exceptions)} />
+                  <MetricCard label={t.newFeatures.exceptionRate} value={fmtPct(((backtestResult?.exception_rate as number) || 0) * 100)} />
+                  <MetricCard label={t.newFeatures.kupiecStat} value={(backtestResult?.kupiec_stat as number)?.toFixed(4)} />
+                  <MetricCard label={t.newFeatures.pValue} value={(backtestResult?.kupiec_pvalue as number)?.toFixed(4)} />
+                  <MetricCard label={t.newFeatures.kupiecStatus} value={backtestResult?.kupiec_status as string} status={backtestResult?.kupiec_status === 'Accept' ? 'pass' : 'fail'} />
                   <MetricCard label={t.newFeatures.baselZone} value={backtestResult.basel_zone as string} />
                 </div>
               </>
