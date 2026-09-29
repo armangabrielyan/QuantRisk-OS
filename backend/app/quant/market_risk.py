@@ -549,3 +549,73 @@ def volatility_surface_data(
         "spot": float(S),
         "synthetic": market_prices_matrix is None,
     }
+
+
+def var_backtesting(returns: list[float], historical_vars: list[float], confidence: float = 0.99) -> dict:
+    """Kupiec POF test and Basel Traffic Light for VaR backtesting."""
+    import numpy as np
+    from scipy.stats import chi2
+    
+    returns_arr = np.array(returns)
+    vars_arr = np.array(historical_vars)
+    
+    if len(returns_arr) != len(vars_arr):
+        # Allow passing a single VaR value for all returns
+        if len(vars_arr) == 1:
+            vars_arr = np.repeat(vars_arr[0], len(returns_arr))
+        else:
+            raise ValueError("Length of returns and historical_vars must match")
+            
+    n_obs = len(returns_arr)
+    # Exceptions are when loss is greater than VaR (assuming returns are negative for losses and VaR is positive)
+    # Wait, usually VaR is positive. Loss = -return. So -return > VaR => return < -VaR
+    exceptions = np.sum(returns_arr < -np.abs(vars_arr))
+    
+    p = 1 - confidence
+    expected_exceptions = n_obs * p
+    
+    # Kupiec POF Test
+    exception_rate = exceptions / n_obs if n_obs > 0 else 0
+    
+    if exceptions > 0 and exceptions < n_obs:
+        lr_pof = -2 * np.log(( (1 - p)**(n_obs - exceptions) * p**exceptions ) / 
+                             ( (1 - exception_rate)**(n_obs - exceptions) * exception_rate**exceptions ))
+        pval = 1 - chi2.cdf(lr_pof, 1)
+    else:
+        lr_pof = 0.0
+        pval = 1.0 if exceptions == 0 else 0.0
+        
+    # Basel Traffic Light (simplified approximation for 250 days 99%)
+    zone = "Green"
+    if n_obs >= 250:
+        if exceptions >= 10:
+            zone = "Red"
+        elif exceptions >= 5:
+            zone = "Yellow"
+            
+    return {
+        "n_observations": int(n_obs),
+        "exceptions": int(exceptions),
+        "expected_exceptions": float(expected_exceptions),
+        "exception_rate": float(exception_rate),
+        "kupiec_stat": float(lr_pof),
+        "kupiec_pvalue": float(pval),
+        "kupiec_status": "Accept" if pval >= 0.05 else "Reject",
+        "basel_zone": zone
+    }
+
+def liquidity_adjusted_var(var: float, spread: float, spread_vol: float, confidence: float, position_size: float) -> dict:
+    """L-VaR: VaR with exogenous liquidity cost (bid-ask spread)."""
+    from scipy.stats import norm
+    z_score = abs(norm.ppf(1 - confidence))
+    
+    # Liquidity cost = 0.5 * P * (Spread + Z * Spread_Vol)
+    liquidity_cost = 0.5 * position_size * (spread + z_score * spread_vol)
+    l_var = var + liquidity_cost
+    
+    return {
+        "base_var": float(var),
+        "liquidity_cost": float(liquidity_cost),
+        "l_var": float(l_var),
+        "spread_impact_pct": float(liquidity_cost / var) if var > 0 else 0.0
+    }

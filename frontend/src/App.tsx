@@ -12,6 +12,7 @@ const Econometrics = lazy(() => import('@/pages/Econometrics'))
 const Portfolio = lazy(() => import('@/pages/Portfolio'))
 const FRMTrainer = lazy(() => import('@/pages/FRMTrainer'))
 const CrisisSandbox = lazy(() => import('@/pages/CrisisSandbox'))
+const OperationalRisk = lazy(() => import('@/pages/OperationalRisk'))
 const Reports = lazy(() => import('@/pages/Reports'))
 
 function PageWrapper({ children }: { children: React.ReactNode }) {
@@ -43,6 +44,7 @@ export default function App() {
               <Route path="/portfolio" element={<PageWrapper><Portfolio /></PageWrapper>} />
               <Route path="/frm-trainer" element={<PageWrapper><FRMTrainer /></PageWrapper>} />
               <Route path="/stress" element={<PageWrapper><CrisisSandbox /></PageWrapper>} />
+              <Route path="/op-risk" element={<PageWrapper><OperationalRisk /></PageWrapper>} />
               <Route path="/reports" element={<PageWrapper><Reports /></PageWrapper>} />
             </Routes>
           </div>

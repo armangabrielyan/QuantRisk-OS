@@ -217,3 +217,26 @@ async def vol_surface_endpoint(req: VolSurfaceRequest):
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Calculation error: {str(e)}")
+
+
+class BacktestRequest(BaseModel):
+    returns: list[float]
+    historical_vars: list[float]
+    confidence: float = 0.99
+
+class LVarRequest(BaseModel):
+    var: float
+    spread: float
+    spread_vol: float
+    confidence: float = 0.99
+    position_size: float
+
+from app.quant.market_risk import var_backtesting, liquidity_adjusted_var
+
+@router.post("/var/backtest")
+async def var_backtest_endpoint(req: BacktestRequest):
+    return {"status": "success", "data": var_backtesting(req.returns, req.historical_vars, req.confidence)}
+
+@router.post("/var/liquidity-adjusted")
+async def lvar_endpoint(req: LVarRequest):
+    return {"status": "success", "data": liquidity_adjusted_var(req.var, req.spread, req.spread_vol, req.confidence, req.position_size)}

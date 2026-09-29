@@ -37,6 +37,8 @@ export const marketRiskApi = {
   blackScholes: (data: object) => api.post('/market-risk/black-scholes', data),
   impliedVol: (data: object) => api.post('/market-risk/implied-volatility', data),
   volSurface: (data: object) => api.post('/market-risk/volatility-surface', data),
+  varBacktest: (data: object) => api.post('/market-risk/var/backtest', data),
+  lVar: (data: object) => api.post('/market-risk/var/liquidity-adjusted', data),
 }
 
 // ── Credit Risk ───────────────────────────────────────────────────────────────
@@ -45,6 +47,9 @@ export const creditRiskApi = {
   expectedLoss: (data: object) => api.post('/credit-risk/expected-loss', data),
   mertonModel: (data: object) => api.post('/credit-risk/merton-model', data),
   creditScoring: (data: object) => api.post('/credit-risk/credit-scoring', data),
+  pfeCva: (data: object) => api.post('/credit-risk/pfe-cva', data),
+  scoringAdvMetrics: (data: object) => api.post('/credit-risk/advanced-metrics', data),
+  transitionMatrix: (data: object) => api.post('/credit-risk/transition-matrix', data),
 }
 
 // ── ALM ───────────────────────────────────────────────────────────────────────
@@ -53,6 +58,8 @@ export const almApi = {
   durationGap: (data: object) => api.post('/alm/duration-gap', data),
   lcr: (data: object) => api.post('/alm/lcr', data),
   nsfr: (data: object) => api.post('/alm/nsfr', data),
+  nssYieldCurve: (data: object) => api.post('/alm/nelson-siegel', data),
+  bondMetrics: (data: object) => api.post('/alm/bond-metrics', data),
 }
 
 // ── Econometrics ──────────────────────────────────────────────────────────────
@@ -66,12 +73,22 @@ export const econometricsApi = {
   vif: (data: object) => api.post('/econometrics/vif', data),
 }
 
+
+// ── Operational Risk ──────────────────────────────────────────────────────────
+
+export const opRiskApi = {
+  sma: (data: object) => api.post('/op-risk/sma', data),
+}
+
 // ── Portfolio ─────────────────────────────────────────────────────────────────
 
 export const portfolioApi = {
   analytics: (data: object) => api.post('/portfolio/analytics', data),
   efficientFrontier: (data: object) => api.post('/portfolio/efficient-frontier', data),
   drawdown: (data: object) => api.post('/portfolio/drawdown', data),
+  blackLitterman: (data: object) => api.post('/portfolio/black-litterman', data),
+  riskParity: (data: object) => api.post('/portfolio/risk-parity', data),
+  concentration: (data: object) => api.post('/portfolio/concentration', data),
 }
 
 // ── Stress Testing ────────────────────────────────────────────────────────────

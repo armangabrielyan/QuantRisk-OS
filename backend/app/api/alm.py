@@ -84,3 +84,29 @@ async def nsfr_endpoint(req: NSFRRequest):
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Calculation error: {str(e)}")
+
+
+class NSSRequest(BaseModel):
+    maturities: list[float]
+    b0: float
+    b1: float
+    b2: float
+    b3: float
+    tau1: float
+    tau2: float
+
+class BondMetricsRequest(BaseModel):
+    cashflows: list[float]
+    times: list[float]
+    yield_rate: float
+    current_price: float = None
+
+from app.quant.alm import nelson_siegel_svensson, bond_dv01_convexity
+
+@router.post("/nelson-siegel")
+async def nss_endpoint(req: NSSRequest):
+    return {"status": "success", "data": nelson_siegel_svensson(req.maturities, req.b0, req.b1, req.b2, req.b3, req.tau1, req.tau2)}
+
+@router.post("/bond-metrics")
+async def bond_metrics_endpoint(req: BondMetricsRequest):
+    return {"status": "success", "data": bond_dv01_convexity(req.cashflows, req.times, req.yield_rate, req.current_price)}

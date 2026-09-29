@@ -11,7 +11,7 @@ import Plot from 'react-plotly.js'
 
 type VarMethod = 'parametric' | 'historical' | 'monte_carlo'
 type VolMethod = 'historical' | 'ewma' | 'garch'
-type Tab = 'var' | 'volatility' | 'bsm' | 'surface'
+type Tab = 'var' | 'volatility' | 'bsm' | 'surface' | 'varBacktest' | 'lVar'
 
 const SAMPLE_RETURNS_KEY = 'SPY'
 
@@ -44,6 +44,20 @@ export default function MarketRisk() {
   const [surfaceSpot, setSurfaceSpot] = useState(100)
   const [surfaceRate, setSurfaceRate] = useState(0.05)
   const [surfaceResult, setSurfaceResult] = useState<Record<string, unknown> | null>(null)
+
+  // VaR Backtest state
+  const [backtestReturns, setBacktestReturns] = useState('-0.01, 0.02, -0.03, -0.05, 0.01')
+  const [backtestVars, setBacktestVars] = useState('0.02, 0.02, 0.02, 0.02, 0.02')
+  const [backtestConf, setBacktestConf] = useState(0.99)
+  const [backtestResult, setBacktestResult] = useState<Record<string, unknown> | null>(null)
+
+  // L-VaR state
+  const [lVarBase, setLVarBase] = useState(100000)
+  const [lVarSpread, setLVarSpread] = useState(0.001)
+  const [lVarSpreadVol, setLVarSpreadVol] = useState(0.0005)
+  const [lVarConf, setLVarConf] = useState(0.99)
+  const [lVarPosSize, setLVarPosSize] = useState(1000000)
+  const [lVarResult, setLVarResult] = useState<Record<string, unknown> | null>(null)
 
   async function getSampleReturns(): Promise<number[]> {
     const res = await dataApi.sample(SAMPLE_RETURNS_KEY, 252)
@@ -104,11 +118,40 @@ export default function MarketRisk() {
     } finally { setLoading(false) }
   }
 
+  async function runBacktest() {
+    setLoading(true); setError(null); setBacktestResult(null)
+    try {
+      const res = await marketRiskApi.varBacktest({
+        returns: backtestReturns.split(',').map(s => parseFloat(s.trim())),
+        historical_vars: backtestVars.split(',').map(s => parseFloat(s.trim())),
+        confidence: backtestConf
+      })
+      setBacktestResult(res.data.data)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Calculation failed')
+    } finally { setLoading(false) }
+  }
+
+  async function runLVar() {
+    setLoading(true); setError(null); setLVarResult(null)
+    try {
+      const res = await marketRiskApi.lVar({
+        var: lVarBase, spread: lVarSpread, spread_vol: lVarSpreadVol,
+        confidence: lVarConf, position_size: lVarPosSize
+      })
+      setLVarResult(res.data.data)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Calculation failed')
+    } finally { setLoading(false) }
+  }
+
   const tabs = [
     { key: 'var', label: mr.tabs.var },
     { key: 'volatility', label: mr.tabs.volatility },
     { key: 'bsm', label: mr.tabs.bsm },
     { key: 'surface', label: mr.tabs.surface },
+    { key: 'varBacktest', label: t.newFeatures.varBacktesting },
+    { key: 'lVar', label: t.newFeatures.lVar },
   ]
 
   return (
@@ -402,6 +445,87 @@ export default function MarketRisk() {
               />
             </Panel>
           )}
+        </div>
+      )}
+
+      {/* ── VaR Backtest Tab ──────────────────────────────────────────────── */}
+      {activeTab === 'varBacktest' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Panel title={t.common.parameters}>
+            <div className="space-y-3">
+              <FormField label={t.newFeatures.historicalReturns}>
+                <Input value={backtestReturns} onChange={e => setBacktestReturns(e.target.value)} />
+              </FormField>
+              <FormField label={t.newFeatures.historicalVar}>
+                <Input value={backtestVars} onChange={e => setBacktestVars(e.target.value)} />
+              </FormField>
+              <FormField label={`${t.common.confidence} (${(backtestConf * 100).toFixed(0)}%)`}>
+                <input type="range" min={0.90} max={0.999} step={0.001} value={backtestConf}
+                  onChange={e => setBacktestConf(parseFloat(e.target.value))} className="w-full accent-emerald-500" />
+              </FormField>
+              <Button onClick={runBacktest} disabled={loading} className="w-full">
+                {loading ? t.common.calculating : t.common.run}
+              </Button>
+            </div>
+          </Panel>
+          <div className="lg:col-span-2 space-y-4">
+            {loading && <LoadingSpinner message={t.common.calculating} />}
+            {backtestResult && !loading && (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                  <MetricCard label={t.newFeatures.exceptions} value={String(backtestResult.exceptions)} />
+                  <MetricCard label={t.newFeatures.expectedExceptions} value={String(backtestResult.expected_exceptions)} />
+                  <MetricCard label={t.newFeatures.exceptionRate} value={fmtPct((backtestResult.exception_rate as number) * 100)} />
+                  <MetricCard label={t.newFeatures.kupiecStat} value={(backtestResult.kupiec_stat as number).toFixed(4)} />
+                  <MetricCard label={t.newFeatures.pValue} value={(backtestResult.p_value as number).toFixed(4)} />
+                  <MetricCard label={t.newFeatures.kupiecStatus} value={backtestResult.status as string} status={backtestResult.status === 'Accept' ? 'pass' : 'fail'} />
+                  <MetricCard label={t.newFeatures.baselZone} value={backtestResult.basel_zone as string} />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── L-VaR Tab ─────────────────────────────────────────────────────── */}
+      {activeTab === 'lVar' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Panel title={t.common.parameters}>
+            <div className="space-y-3">
+              <FormField label={t.newFeatures.baseVar}>
+                <Input type="number" value={lVarBase} onChange={e => setLVarBase(parseFloat(e.target.value))} />
+              </FormField>
+              <FormField label={t.newFeatures.bidAskSpread}>
+                <Input type="number" step="0.001" value={lVarSpread} onChange={e => setLVarSpread(parseFloat(e.target.value))} />
+              </FormField>
+              <FormField label={t.newFeatures.spreadVolatility}>
+                <Input type="number" step="0.0001" value={lVarSpreadVol} onChange={e => setLVarSpreadVol(parseFloat(e.target.value))} />
+              </FormField>
+              <FormField label={`${t.common.confidence} (${(lVarConf * 100).toFixed(0)}%)`}>
+                <input type="range" min={0.90} max={0.999} step={0.001} value={lVarConf}
+                  onChange={e => setLVarConf(parseFloat(e.target.value))} className="w-full accent-emerald-500" />
+              </FormField>
+              <FormField label={t.newFeatures.positionSize}>
+                <Input type="number" value={lVarPosSize} onChange={e => setLVarPosSize(parseFloat(e.target.value))} />
+              </FormField>
+              <Button onClick={runLVar} disabled={loading} className="w-full">
+                {loading ? t.common.calculating : t.common.run}
+              </Button>
+            </div>
+          </Panel>
+          <div className="lg:col-span-2 space-y-4">
+            {loading && <LoadingSpinner message={t.common.calculating} />}
+            {lVarResult && !loading && (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                  <MetricCard label={t.newFeatures.baseVar} value={fmtCurrency(lVarResult.base_var as number)} />
+                  <MetricCard label={t.newFeatures.liquidityCost} value={fmtCurrency(lVarResult.liquidity_cost as number)} />
+                  <MetricCard label={t.newFeatures.lVar} value={fmtCurrency(lVarResult.l_var as number)} status="fail" />
+                  <MetricCard label={t.newFeatures.spreadImpact} value={fmtPct((lVarResult.spread_impact_pct as number) * 100)} />
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

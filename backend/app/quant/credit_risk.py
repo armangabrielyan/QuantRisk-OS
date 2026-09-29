@@ -251,3 +251,76 @@ def credit_scoring_pipeline(
         "default_rate": float(y.mean()),
         "feature_names": feature_cols,
     }
+
+
+def pfe_cva_profile(mtm_simulations: list[list[float]], pd: float, lgd: float) -> dict:
+    """Counterparty Risk: EE, EPE, PFE, and CVA."""
+    import numpy as np
+    
+    mtm_arr = np.array(mtm_simulations) # shape: (n_simulations, n_time_steps)
+    
+    # Positive exposure only E = max(V, 0)
+    exposure = np.maximum(mtm_arr, 0)
+    
+    # Expected Exposure (EE) over time
+    ee = np.mean(exposure, axis=0)
+    
+    # Expected Positive Exposure (EPE) - time average of EE
+    epe = np.mean(ee)
+    
+    # Potential Future Exposure (PFE) at 95%
+    pfe_95 = np.percentile(exposure, 95, axis=0)
+    
+    # Simplified CVA = LGD * sum(EE * Marginal_PD)
+    # Assuming PD is cumulative at the end, spread evenly for simplicity
+    time_steps = len(ee)
+    marginal_pd = pd / time_steps if time_steps > 0 else 0
+    cva = lgd * np.sum(ee * marginal_pd)
+    
+    return {
+        "epe": float(epe),
+        "cva": float(cva),
+        "ee_profile": ee.tolist(),
+        "pfe_95_profile": pfe_95.tolist(),
+        "time_steps": time_steps
+    }
+
+def scoring_advanced_metrics(y_true: list[int], y_prob: list[float]) -> dict:
+    """Advanced scoring metrics: KS Stat, Gini, ROC-AUC."""
+    import numpy as np
+    from sklearn.metrics import roc_auc_score, roc_curve
+    
+    try:
+        auc = roc_auc_score(y_true, y_prob)
+        gini = 2 * auc - 1
+        
+        # KS Stat
+        fpr, tpr, _ = roc_curve(y_true, y_prob)
+        ks_stat = np.max(tpr - fpr)
+        
+        return {
+            "roc_auc": float(auc),
+            "gini": float(gini),
+            "ks_stat": float(ks_stat),
+            "ks_interpretation": "Excellent" if ks_stat > 0.4 else "Good" if ks_stat > 0.3 else "Weak"
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+def transition_matrix_multiplier(current_ratings: list[str], transition_matrix: dict) -> dict:
+    """Markov transition for credit ratings."""
+    # Simplify: Count current ratings, apply probabilities to get expected future distribution
+    from collections import Counter
+    counts = Counter(current_ratings)
+    total = sum(counts.values())
+    
+    expected_future = {}
+    for rating, count in counts.items():
+        if rating in transition_matrix:
+            for next_rating, prob in transition_matrix[rating].items():
+                expected_future[next_rating] = expected_future.get(next_rating, 0) + (count * prob)
+                
+    return {
+        "current_distribution": {k: v/total for k, v in counts.items()},
+        "expected_future_distribution": {k: v/total for k, v in expected_future.items()}
+    }

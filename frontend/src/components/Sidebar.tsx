@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, TrendingDown, CreditCard, BarChart2,
   PieChart, BookOpen, Zap, FileText, X, Menu, Globe,
-  ChevronRight,
+  ChevronRight, AlertTriangle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/i18n'
@@ -16,6 +16,7 @@ const navItems = [
   { to: '/portfolio', icon: PieChart, labelKey: 'portfolio' as const },
   { to: '/frm-trainer', icon: BookOpen, labelKey: 'frmTrainer' as const },
   { to: '/stress', icon: Zap, labelKey: 'crisisSandbox' as const },
+  { to: '/op-risk', icon: AlertTriangle, labelKey: 'opRisk' as const },
   { to: '/reports', icon: FileText, labelKey: 'reports' as const },
 ]
 

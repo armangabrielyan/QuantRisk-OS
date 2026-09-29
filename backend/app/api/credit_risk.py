@@ -84,3 +84,31 @@ async def credit_scoring_endpoint(req: CreditScoringRequest):
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Calculation error: {str(e)}")
+
+
+class PFE_CVARequest(BaseModel):
+    mtm_simulations: list[list[float]]
+    pd: float
+    lgd: float
+
+class AdvMetricsRequest(BaseModel):
+    y_true: list[int]
+    y_prob: list[float]
+
+class TransitionRequest(BaseModel):
+    current_ratings: list[str]
+    transition_matrix: dict
+
+from app.quant.credit_risk import pfe_cva_profile, scoring_advanced_metrics, transition_matrix_multiplier
+
+@router.post("/pfe-cva")
+async def pfe_cva_endpoint(req: PFE_CVARequest):
+    return {"status": "success", "data": pfe_cva_profile(req.mtm_simulations, req.pd, req.lgd)}
+
+@router.post("/advanced-metrics")
+async def adv_metrics_endpoint(req: AdvMetricsRequest):
+    return {"status": "success", "data": scoring_advanced_metrics(req.y_true, req.y_prob)}
+
+@router.post("/transition-matrix")
+async def transition_matrix_endpoint(req: TransitionRequest):
+    return {"status": "success", "data": transition_matrix_multiplier(req.current_ratings, req.transition_matrix)}

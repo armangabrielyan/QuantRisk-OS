@@ -80,3 +80,32 @@ async def drawdown_endpoint(req: DrawdownRequest):
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Calculation error: {str(e)}")
+
+
+class BlackLittermanRequest(BaseModel):
+    returns: list[float]
+    cov_matrix: list[list[float]]
+    market_weights: list[float]
+    views: list[float]
+    p_matrix: list[list[float]]
+    tau: float = 0.05
+
+class RiskParityRequest(BaseModel):
+    cov_matrix: list[list[float]]
+
+class HHIRequest(BaseModel):
+    weights: list[float]
+
+from app.quant.portfolio import black_litterman, risk_parity_weights, hhi_concentration
+
+@router.post("/black-litterman")
+async def bl_endpoint(req: BlackLittermanRequest):
+    return {"status": "success", "data": black_litterman(req.returns, req.cov_matrix, req.market_weights, req.views, req.p_matrix, req.tau)}
+
+@router.post("/risk-parity")
+async def rp_endpoint(req: RiskParityRequest):
+    return {"status": "success", "data": risk_parity_weights(req.cov_matrix)}
+
+@router.post("/concentration")
+async def hhi_endpoint(req: HHIRequest):
+    return {"status": "success", "data": hhi_concentration(req.weights)}

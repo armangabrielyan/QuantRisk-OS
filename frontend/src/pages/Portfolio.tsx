@@ -9,7 +9,7 @@ import { fmtPct } from '@/lib/utils'
 import { useI18n } from '@/i18n'
 import Plot from 'react-plotly.js'
 
-type Tab = 'analytics' | 'frontier'
+type Tab = 'analytics' | 'frontier' | 'blackLitterman' | 'riskParity' | 'concentration'
 
 interface Asset { id: number; ticker: string; weight: number }
 
@@ -30,6 +30,19 @@ export default function Portfolio() {
   const [rfRate, setRfRate] = useState(0.02)
   const [analyticsResult, setAnalyticsResult] = useState<Record<string, unknown> | null>(null)
   const [frontierResult, setFrontierResult] = useState<Record<string, unknown> | null>(null)
+
+  const [blPriorReturns, setBlPriorReturns] = useState('0.05, 0.06, 0.08, 0.04')
+  const [blMarketWeights, setBlMarketWeights] = useState('0.4, 0.2, 0.2, 0.2')
+  const [blViewsStr, setBlViewsStr] = useState('[{"P": [0,0,1,-1], "Q": 0.02}]')
+  const [blTau, setBlTau] = useState(0.05)
+  const [blResult, setBlResult] = useState<Record<string, unknown> | null>(null)
+
+  const [rpCovMatrix, setRpCovMatrix] = useState('[[0.04, 0.01, 0.02, 0], [0.01, 0.05, 0, 0], [0.02, 0, 0.06, 0], [0, 0, 0, 0.03]]')
+  const [rpResult, setRpResult] = useState<Record<string, unknown> | null>(null)
+
+  const [concWeights, setConcWeights] = useState('0.4, 0.2, 0.2, 0.2')
+  const [concResult, setConcResult] = useState<Record<string, unknown> | null>(null)
+
 
   const updateAsset = (id: number, field: keyof Asset, val: string) =>
     setAssets(p => p.map(a => a.id === id ? { ...a, [field]: field === 'ticker' ? val : parseFloat(val) || 0 } : a))
@@ -69,9 +82,52 @@ export default function Portfolio() {
     finally { setLoading(false) }
   }
 
+  async function runBlackLitterman() {
+    setLoading(true); setError(null); setBlResult(null)
+    try {
+      const cov = Array(4).fill(0).map((_, i) => Array(4).fill(0).map((_, j) => i === j ? 0.04 : 0.01))
+      const viewsJson = JSON.parse(blViewsStr)
+      const res = await portfolioApi.blackLitterman({
+        returns: blPriorReturns.split(',').map(Number),
+        cov_matrix: cov,
+        market_weights: blMarketWeights.split(',').map(Number),
+        views: viewsJson.map((v:any) => v.Q),
+        p_matrix: viewsJson.map((v:any) => v.P),
+        tau: blTau
+      })
+      setBlResult(res.data.data)
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Calculation failed') }
+    finally { setLoading(false) }
+  }
+
+  async function runRiskParity() {
+    setLoading(true); setError(null); setRpResult(null)
+    try {
+      const res = await portfolioApi.riskParity({
+        cov_matrix: JSON.parse(rpCovMatrix)
+      })
+      setRpResult(res.data.data)
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Calculation failed') }
+    finally { setLoading(false) }
+  }
+
+  async function runConcentration() {
+    setLoading(true); setError(null); setConcResult(null)
+    try {
+      const res = await portfolioApi.concentration({
+        weights: concWeights.split(',').map(Number)
+      })
+      setConcResult(res.data.data)
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Calculation failed') }
+    finally { setLoading(false) }
+  }
+
   const tabs = [
     { key: 'analytics', label: po.tabs.analytics },
     { key: 'frontier', label: po.tabs.frontier },
+    { key: 'blackLitterman', label: t.newFeatures.blackLitterman },
+    { key: 'riskParity', label: t.newFeatures.riskParity },
+    { key: 'concentration', label: t.newFeatures.concentration },
   ]
 
   const weightTotal = assets.reduce((s, a) => s + a.weight, 0)
@@ -316,6 +372,93 @@ export default function Portfolio() {
           )}
         </div>
       )}
+
+      {/* ── Black-Litterman ─────────────────────────────────────────────── */}
+      {activeTab === 'blackLitterman' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Panel title={t.common.parameters}>
+            <div className="space-y-3">
+              <FormField label={t.newFeatures.priorReturns}>
+                <Input value={blPriorReturns} onChange={e => setBlPriorReturns(e.target.value)} />
+              </FormField>
+              <FormField label={t.newFeatures.marketWeights}>
+                <Input value={blMarketWeights} onChange={e => setBlMarketWeights(e.target.value)} />
+              </FormField>
+              <FormField label={t.newFeatures.views} hint="JSON array of objects with P and Q">
+                <Input value={blViewsStr} onChange={e => setBlViewsStr(e.target.value)} />
+              </FormField>
+              <FormField label={t.newFeatures.tau}>
+                <Input type="number" step="0.01" value={blTau} onChange={e => setBlTau(parseFloat(e.target.value))} />
+              </FormField>
+              <Button onClick={runBlackLitterman} disabled={loading} className="w-full">
+                {loading ? t.common.calculating : t.common.run}
+              </Button>
+            </div>
+          </Panel>
+          <div className="lg:col-span-2 space-y-4">
+            {loading && <LoadingSpinner message={t.common.calculating} />}
+            {blResult && !loading && (
+              <Panel title={t.newFeatures.blReturns}>
+                <pre className="text-xs text-slate-300 bg-[#0a0a0f] p-4 rounded overflow-auto">
+                  {JSON.stringify(blResult.bl_returns, null, 2)}
+                </pre>
+              </Panel>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Risk Parity ─────────────────────────────────────────────────── */}
+      {activeTab === 'riskParity' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Panel title={t.common.parameters}>
+            <div className="space-y-3">
+              <FormField label="Covariance Matrix (JSON 2D array)">
+                <Input value={rpCovMatrix} onChange={e => setRpCovMatrix(e.target.value)} />
+              </FormField>
+              <Button onClick={runRiskParity} disabled={loading} className="w-full">
+                {loading ? t.common.calculating : t.common.run}
+              </Button>
+            </div>
+          </Panel>
+          <div className="lg:col-span-2 space-y-4">
+            {loading && <LoadingSpinner message={t.common.calculating} />}
+            {rpResult && !loading && (
+              <Panel title={t.newFeatures.ercWeights}>
+                <pre className="text-xs text-slate-300 bg-[#0a0a0f] p-4 rounded overflow-auto">
+                  {JSON.stringify(rpResult.weights, null, 2)}
+                </pre>
+              </Panel>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Concentration ───────────────────────────────────────────────── */}
+      {activeTab === 'concentration' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Panel title={t.common.parameters}>
+            <div className="space-y-3">
+              <FormField label={t.newFeatures.weights}>
+                <Input value={concWeights} onChange={e => setConcWeights(e.target.value)} />
+              </FormField>
+              <Button onClick={runConcentration} disabled={loading} className="w-full">
+                {loading ? t.common.calculating : t.common.run}
+              </Button>
+            </div>
+          </Panel>
+          <div className="lg:col-span-2 space-y-4">
+            {loading && <LoadingSpinner message={t.common.calculating} />}
+            {concResult && !loading && (
+              <div className="grid grid-cols-2 gap-4">
+                <MetricCard label={t.newFeatures.hhi} value={(concResult.hhi as number).toFixed(4)} />
+                <MetricCard label={t.newFeatures.interpretation} value={concResult.interpretation as string} />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

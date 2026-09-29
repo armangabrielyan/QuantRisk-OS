@@ -237,3 +237,50 @@ def nsfr_calculator(
         "interpretation": interpretation,
         "minimum_requirement_pct": 100.0,
     }
+
+
+def nelson_siegel_svensson(maturities: list[float], b0: float, b1: float, b2: float, b3: float, tau1: float, tau2: float) -> dict:
+    """NSS Yield Curve."""
+    import numpy as np
+    m = np.array(maturities)
+    
+    # Avoid division by zero
+    m = np.where(m == 0, 1e-6, m)
+    
+    term1 = (1 - np.exp(-m/tau1)) / (m/tau1)
+    term2 = term1 - np.exp(-m/tau1)
+    term3 = ((1 - np.exp(-m/tau2)) / (m/tau2)) - np.exp(-m/tau2)
+    
+    yields = b0 + b1*term1 + b2*term2 + b3*term3
+    
+    return {
+        "maturities": m.tolist(),
+        "yields": yields.tolist()
+    }
+
+def bond_dv01_convexity(cashflows: list[float], times: list[float], yield_rate: float, current_price: float) -> dict:
+    """DV01 (BPV) and Convexity for a bond."""
+    import numpy as np
+    cf = np.array(cashflows)
+    t = np.array(times)
+    y = yield_rate
+    
+    # Mac Macaulay Duration
+    discount_factors = np.exp(-y * t) # Continuous compounding for simplicity
+    pv_cf = cf * discount_factors
+    price = np.sum(pv_cf) if current_price is None else current_price
+    
+    mac_dur = np.sum(t * pv_cf) / price
+    mod_dur = mac_dur # For continuous, ModDur = MacDur
+    
+    dv01 = mod_dur * price * 0.0001
+    
+    convexity = np.sum(t**2 * pv_cf) / price
+    
+    return {
+        "price": float(price),
+        "dv01": float(dv01),
+        "macaulay_duration": float(mac_dur),
+        "modified_duration": float(mod_dur),
+        "convexity": float(convexity)
+    }

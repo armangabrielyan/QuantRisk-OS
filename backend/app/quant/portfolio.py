@@ -284,3 +284,62 @@ def maximum_drawdown(returns: List[float]) -> dict:
         "trough_idx": trough_idx,
         "n_periods": len(arr),
     }
+
+
+def black_litterman(returns: list[float], cov_matrix: list[list[float]], market_weights: list[float], views: list[float], p_matrix: list[list[float]], tau: float = 0.05) -> dict:
+    """Simplified Black-Litterman expected returns."""
+    import numpy as np
+    
+    pi = np.array(returns)
+    cov = np.array(cov_matrix)
+    w_m = np.array(market_weights)
+    Q = np.array(views)
+    P = np.array(p_matrix)
+    
+    # Omega (uncertainty of views) proportional to P * cov * P.T
+    omega = np.dot(np.dot(P, cov * tau), P.T)
+    if omega.ndim == 0:
+        omega = np.array([[omega]])
+    elif omega.ndim == 1:
+        omega = np.diag(omega)
+        
+    try:
+        omega_inv = np.linalg.inv(omega)
+        cov_tau_inv = np.linalg.inv(cov * tau)
+        
+        # BL formula: [(tau*Cov)^-1 + P^T * Omega^-1 * P]^-1 * [(tau*Cov)^-1 * Pi + P^T * Omega^-1 * Q]
+        term1 = np.linalg.inv(cov_tau_inv + np.dot(np.dot(P.T, omega_inv), P))
+        term2 = np.dot(cov_tau_inv, pi) + np.dot(np.dot(P.T, omega_inv), Q)
+        bl_returns = np.dot(term1, term2)
+        
+        return {
+            "bl_returns": bl_returns.tolist(),
+            "prior_returns": pi.tolist()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+def risk_parity_weights(cov_matrix: list[list[float]]) -> dict:
+    """Equal Risk Contribution (ERC) portfolio weights (inverse volatility approximation)."""
+    import numpy as np
+    cov = np.array(cov_matrix)
+    vols = np.sqrt(np.diag(cov))
+    
+    inv_vols = 1.0 / vols
+    weights = inv_vols / np.sum(inv_vols)
+    
+    return {
+        "weights": weights.tolist()
+    }
+
+def hhi_concentration(weights: list[float]) -> dict:
+    """Herfindahl-Hirschman Index for portfolio concentration."""
+    import numpy as np
+    w = np.array(weights)
+    hhi = np.sum(w**2) * 10000 # Standard HHI scaling
+    
+    interpretation = "Highly Concentrated" if hhi > 2500 else "Moderately Concentrated" if hhi > 1500 else "Diversified"
+    return {
+        "hhi": float(hhi),
+        "interpretation": interpretation
+    }

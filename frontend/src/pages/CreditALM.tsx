@@ -7,8 +7,9 @@ import {
 } from '@/components/ui'
 import { fmtCurrency, fmtPct } from '@/lib/utils'
 import { useI18n } from '@/i18n'
+import Plot from 'react-plotly.js'
 
-type Tab = 'el' | 'merton' | 'alm' | 'liquidity'
+type Tab = 'el' | 'merton' | 'alm' | 'liquidity' | 'cva' | 'scoring' | 'migration' | 'yieldCurve' | 'bondSens'
 
 interface Exposure { id: number; name: string; pd: number; lgd: number; ead: number }
 
@@ -40,6 +41,32 @@ export default function CreditALM() {
   const [liqParams, setLiqParams] = useState({ hqla: 35_000_000, cash_outflows: 40_000_000, cash_inflows: 12_000_000 })
   const [lcrResult, setLcrResult] = useState<Record<string, unknown> | null>(null)
   const [nsfrResult, setNsfrResult] = useState<Record<string, unknown> | null>(null)
+
+  const [cvaPd, setCvaPd] = useState(0.02)
+  const [cvaLgd, setCvaLgd] = useState(0.4)
+  const [cvaResult, setCvaResult] = useState<Record<string, unknown> | null>(null)
+
+  const [scoringYTrue, setScoringYTrue] = useState('0, 1, 1, 0, 1')
+  const [scoringYProb, setScoringYProb] = useState('0.1, 0.8, 0.9, 0.2, 0.7')
+  const [scoringResult, setScoringResult] = useState<Record<string, unknown> | null>(null)
+
+  const [migrationRatings, setMigrationRatings] = useState('AAA, AA, A, BBB')
+  const [migrationResult, setMigrationResult] = useState<Record<string, unknown> | null>(null)
+
+  const [ycBeta0, setYcBeta0] = useState(0.03)
+  const [ycBeta1, setYcBeta1] = useState(-0.02)
+  const [ycBeta2, setYcBeta2] = useState(0.02)
+  const [ycBeta3, setYcBeta3] = useState(0.01)
+  const [ycTau1, setYcTau1] = useState(1.5)
+  const [ycTau2, setYcTau2] = useState(5.0)
+  const [ycResult, setYcResult] = useState<Record<string, unknown> | null>(null)
+
+  const [bondCashflows, setBondCashflows] = useState('5, 5, 5, 5, 105')
+  const [bondTimes, setBondTimes] = useState('1, 2, 3, 4, 5')
+  const [bondYield, setBondYield] = useState(0.04)
+  const [bondPrice, setBondPrice] = useState('')
+  const [bondResult, setBondResult] = useState<Record<string, unknown> | null>(null)
+
 
   const addExposure = () => setExposures(p => [...p, { id: Date.now(), name: `Exposure ${p.length + 1}`, pd: 0.02, lgd: 0.45, ead: 1_000_000 }])
   const removeExposure = (id: number) => setExposures(p => p.filter(e => e.id !== id))
@@ -99,11 +126,84 @@ export default function CreditALM() {
     finally { setLoading(false) }
   }
 
+  async function runCVA() {
+    setLoading(true); setError(null); setCvaResult(null)
+    try {
+      const mtm = Array(10).fill(0).map(() => {
+        let v = 100
+        return Array(20).fill(0).map(() => { v += (Math.random() - 0.5) * 10; return Math.max(0, v) })
+      })
+      const res = await creditRiskApi.pfeCva({ mtm_simulations: mtm, pd: cvaPd, lgd: cvaLgd })
+      setCvaResult(res.data.data)
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Calculation failed') }
+    finally { setLoading(false) }
+  }
+
+  async function runScoring() {
+    setLoading(true); setError(null); setScoringResult(null)
+    try {
+      const res = await creditRiskApi.scoringAdvMetrics({
+        y_true: scoringYTrue.split(',').map(s => parseInt(s.trim())),
+        y_prob: scoringYProb.split(',').map(s => parseFloat(s.trim()))
+      })
+      setScoringResult(res.data.data)
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Calculation failed') }
+    finally { setLoading(false) }
+  }
+
+  async function runMigration() {
+    setLoading(true); setError(null); setMigrationResult(null)
+    try {
+      const res = await creditRiskApi.transitionMatrix({
+        current_ratings: migrationRatings.split(',').map(s => s.trim()),
+        transition_matrix: {
+          "AAA": {"AAA":0.9, "AA":0.1},
+          "AA": {"AAA":0.05, "AA":0.8, "A":0.15},
+          "A": {"AA":0.1, "A":0.8, "BBB":0.1},
+          "BBB": {"A":0.15, "BBB":0.8, "Default":0.05}
+        }
+      })
+      setMigrationResult(res.data.data)
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Calculation failed') }
+    finally { setLoading(false) }
+  }
+
+  async function runYieldCurve() {
+    setLoading(true); setError(null); setYcResult(null)
+    try {
+      const res = await almApi.nssYieldCurve({
+        maturities: [1,2,3,4,5,7,10,20,30],
+        b0: ycBeta0, b1: ycBeta1, b2: ycBeta2, b3: ycBeta3, tau1: ycTau1, tau2: ycTau2
+      })
+      setYcResult(res.data.data)
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Calculation failed') }
+    finally { setLoading(false) }
+  }
+
+  async function runBondSens() {
+    setLoading(true); setError(null); setBondResult(null)
+    try {
+      const res = await almApi.bondMetrics({
+        cashflows: bondCashflows.split(',').map(s => parseFloat(s.trim())),
+        times: bondTimes.split(',').map(s => parseFloat(s.trim())),
+        yield_rate: bondYield,
+        current_price: bondPrice ? parseFloat(bondPrice) : undefined
+      })
+      setBondResult(res.data.data)
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Calculation failed') }
+    finally { setLoading(false) }
+  }
+
   const tabs = [
     { key: 'el', label: ca.tabs.el },
     { key: 'merton', label: ca.tabs.merton },
     { key: 'alm', label: ca.tabs.alm },
     { key: 'liquidity', label: ca.tabs.liquidity },
+    { key: 'cva', label: t.newFeatures.counterpartyRisk },
+    { key: 'scoring', label: t.newFeatures.scoringMetrics },
+    { key: 'migration', label: t.newFeatures.ratingMigration },
+    { key: 'yieldCurve', label: t.newFeatures.yieldCurveAlm },
+    { key: 'bondSens', label: t.newFeatures.bondSensitivities },
   ]
 
   const rateShockBps = Math.round(almParams.rate_shock * 10000)
@@ -368,6 +468,177 @@ export default function CreditALM() {
           </div>
         </div>
       )}
+
+      {/* ── CVA ───────────────────────────────────────────────────────────── */}
+      {activeTab === 'cva' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Panel title={t.common.parameters}>
+            <div className="space-y-3">
+              <FormField label={t.metrics.pd}>
+                <Input type="number" step="0.01" value={cvaPd} onChange={e => setCvaPd(parseFloat(e.target.value))} />
+              </FormField>
+              <FormField label={t.metrics.lgd}>
+                <Input type="number" step="0.01" value={cvaLgd} onChange={e => setCvaLgd(parseFloat(e.target.value))} />
+              </FormField>
+              <Button onClick={runCVA} disabled={loading} className="w-full">
+                {loading ? t.common.calculating : t.common.run}
+              </Button>
+            </div>
+          </Panel>
+          <div className="lg:col-span-2 space-y-4">
+            {loading && <LoadingSpinner message={t.common.calculating} />}
+            {cvaResult && !loading && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <MetricCard label={t.newFeatures.epe} value={fmtCurrency(cvaResult.epe as number)} />
+                  <MetricCard label={t.newFeatures.cva} value={fmtCurrency(cvaResult.cva as number)} status="fail" />
+                </div>
+                <Panel title="Profiles">
+                  <Plot
+                    data={[
+                      { y: cvaResult.ee_profile as number[], type: 'scatter', mode: 'lines', name: 'EE' },
+                      { y: cvaResult.pfe_95_profile as number[], type: 'scatter', mode: 'lines', name: 'PFE 95%' }
+                    ]}
+                    layout={{ paper_bgcolor: '#0f1117', plot_bgcolor: '#0f1117', font: { color: '#94a3b8' }, height: 250, margin: { t:10, b:30, l:40, r:10 } }}
+                    config={{ responsive: true, displayModeBar: false }}
+                    style={{ width: '100%' }}
+                  />
+                </Panel>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Scoring ───────────────────────────────────────────────────────── */}
+      {activeTab === 'scoring' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Panel title={t.common.parameters}>
+            <div className="space-y-3">
+              <FormField label={t.newFeatures.yTrue}>
+                <Input value={scoringYTrue} onChange={e => setScoringYTrue(e.target.value)} />
+              </FormField>
+              <FormField label={t.newFeatures.yProb}>
+                <Input value={scoringYProb} onChange={e => setScoringYProb(e.target.value)} />
+              </FormField>
+              <Button onClick={runScoring} disabled={loading} className="w-full">
+                {loading ? t.common.calculating : t.common.run}
+              </Button>
+            </div>
+          </Panel>
+          <div className="lg:col-span-2 space-y-4">
+            {loading && <LoadingSpinner message={t.common.calculating} />}
+            {scoringResult && !loading && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                <MetricCard label={t.newFeatures.rocAuc} value={(scoringResult.roc_auc as number).toFixed(4)} />
+                <MetricCard label={t.newFeatures.gini} value={(scoringResult.gini as number).toFixed(4)} />
+                <MetricCard label={t.newFeatures.ksStat} value={(scoringResult.ks_stat as number).toFixed(4)} />
+                <MetricCard label={t.newFeatures.ksInterpretation} value={scoringResult.ks_interpretation as string} />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Migration ─────────────────────────────────────────────────────── */}
+      {activeTab === 'migration' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Panel title={t.common.parameters}>
+            <div className="space-y-3">
+              <FormField label={t.newFeatures.currentRatings}>
+                <Input value={migrationRatings} onChange={e => setMigrationRatings(e.target.value)} />
+              </FormField>
+              <Button onClick={runMigration} disabled={loading} className="w-full">
+                {loading ? t.common.calculating : t.common.run}
+              </Button>
+            </div>
+          </Panel>
+          <div className="lg:col-span-2 space-y-4">
+            {loading && <LoadingSpinner message={t.common.calculating} />}
+            {migrationResult && !loading && (
+              <Panel title={t.newFeatures.expectedFutureDist}>
+                <pre className="text-xs text-slate-300 bg-[#0a0a0f] p-4 rounded overflow-auto">
+                  {JSON.stringify(migrationResult.expected_future_distribution, null, 2)}
+                </pre>
+              </Panel>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Yield Curve ───────────────────────────────────────────────────── */}
+      {activeTab === 'yieldCurve' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Panel title={t.common.parameters}>
+            <div className="space-y-3 grid grid-cols-2 gap-2">
+              <FormField label="Beta 0"><Input type="number" step="0.01" value={ycBeta0} onChange={e=>setYcBeta0(parseFloat(e.target.value))} /></FormField>
+              <FormField label="Beta 1"><Input type="number" step="0.01" value={ycBeta1} onChange={e=>setYcBeta1(parseFloat(e.target.value))} /></FormField>
+              <FormField label="Beta 2"><Input type="number" step="0.01" value={ycBeta2} onChange={e=>setYcBeta2(parseFloat(e.target.value))} /></FormField>
+              <FormField label="Beta 3"><Input type="number" step="0.01" value={ycBeta3} onChange={e=>setYcBeta3(parseFloat(e.target.value))} /></FormField>
+              <FormField label="Tau 1"><Input type="number" step="0.1" value={ycTau1} onChange={e=>setYcTau1(parseFloat(e.target.value))} /></FormField>
+              <FormField label="Tau 2"><Input type="number" step="0.1" value={ycTau2} onChange={e=>setYcTau2(parseFloat(e.target.value))} /></FormField>
+              <div className="col-span-2">
+                <Button onClick={runYieldCurve} disabled={loading} className="w-full">
+                  {loading ? t.common.calculating : t.common.run}
+                </Button>
+              </div>
+            </div>
+          </Panel>
+          <div className="lg:col-span-2 space-y-4">
+            {loading && <LoadingSpinner message={t.common.calculating} />}
+            {ycResult && !loading && (
+              <Panel title={t.newFeatures.yieldCurveAlm}>
+                <Plot
+                  data={[
+                    { x: ycResult.maturities as number[], y: ycResult.yields as number[], type: 'scatter', mode: 'lines+markers' }
+                  ]}
+                  layout={{ paper_bgcolor: '#0f1117', plot_bgcolor: '#0f1117', font: { color: '#94a3b8' }, height: 250, margin: { t:10, b:30, l:40, r:10 } }}
+                  config={{ responsive: true, displayModeBar: false }}
+                  style={{ width: '100%' }}
+                />
+              </Panel>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Bond Sensitivities ────────────────────────────────────────────── */}
+      {activeTab === 'bondSens' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Panel title={t.common.parameters}>
+            <div className="space-y-3">
+              <FormField label={t.newFeatures.cashflows}>
+                <Input value={bondCashflows} onChange={e => setBondCashflows(e.target.value)} />
+              </FormField>
+              <FormField label={t.newFeatures.times}>
+                <Input value={bondTimes} onChange={e => setBondTimes(e.target.value)} />
+              </FormField>
+              <FormField label={t.newFeatures.yieldRate}>
+                <Input type="number" step="0.01" value={bondYield} onChange={e => setBondYield(parseFloat(e.target.value))} />
+              </FormField>
+              <FormField label={t.newFeatures.currentPrice}>
+                <Input type="number" value={bondPrice} onChange={e => setBondPrice(e.target.value)} placeholder="Optional" />
+              </FormField>
+              <Button onClick={runBondSens} disabled={loading} className="w-full">
+                {loading ? t.common.calculating : t.common.run}
+              </Button>
+            </div>
+          </Panel>
+          <div className="lg:col-span-2 space-y-4">
+            {loading && <LoadingSpinner message={t.common.calculating} />}
+            {bondResult && !loading && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                <MetricCard label={t.newFeatures.price} value={fmtCurrency(bondResult.price as number)} />
+                <MetricCard label={t.newFeatures.dv01} value={(bondResult.dv01 as number).toFixed(4)} />
+                <MetricCard label={t.newFeatures.macDur} value={(bondResult.mac_duration as number).toFixed(4)} />
+                <MetricCard label={t.newFeatures.modDur} value={(bondResult.mod_duration as number).toFixed(4)} />
+                <MetricCard label={t.newFeatures.convexity} value={(bondResult.convexity as number).toFixed(4)} />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
