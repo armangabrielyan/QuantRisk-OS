@@ -109,24 +109,24 @@ export default function Econometrics() {
                   <DataTable
                     headers={ec.ts.adfHeaders}
                     rows={[
-                      [ec.ts.adfStat, (tsResult.adf_result as any).adf_statistic?.toFixed(4)],
-                      [ec.ts.pValue, (tsResult.adf_result as any).p_value?.toFixed(4)],
-                      [ec.ts.lagsUsed, (tsResult.adf_result as any).used_lag],
-                      [ec.ts.cv1, (tsResult.adf_result as any).critical_values?.['1%']?.toFixed(4)],
-                      [ec.ts.cv5, (tsResult.adf_result as any).critical_values?.['5%']?.toFixed(4)],
-                      [ec.ts.cv10, (tsResult.adf_result as any).critical_values?.['10%']?.toFixed(4)],
+                      [ec.ts.adfStat, (tsResult?.adf_test as any)?.statistic?.toFixed(4)],
+                      [ec.ts.pValue, (tsResult?.adf_test as any)?.pvalue?.toFixed(4)],
+                      [ec.ts.lagsUsed, (tsResult?.adf_test as any)?.usedlag],
+                      [ec.ts.cv1, (tsResult?.adf_test as any)?.critical_values?.['1%']?.toFixed(4)],
+                      [ec.ts.cv5, (tsResult?.adf_test as any)?.critical_values?.['5%']?.toFixed(4)],
+                      [ec.ts.cv10, (tsResult?.adf_test as any)?.critical_values?.['10%']?.toFixed(4)],
                     ]}
                   />
-                  <div className="mt-2 text-xs text-slate-400">{(tsResult.adf_result as any).interpretation}</div>
+                  <div className="mt-2 text-xs text-slate-400">{(tsResult?.adf_test as any)?.interpretation}</div>
                 </Panel>
                 <Panel title={t.common.summary}>
                   <DataTable
                     headers={ec.ts.adfHeaders}
                     rows={[
-                      [ec.ts.mean, (tsResult.descriptive_stats as any).mean?.toFixed(6)],
-                      [ec.ts.stdDev, (tsResult.descriptive_stats as any).std?.toFixed(6)],
-                      [ec.ts.skewness, (tsResult.descriptive_stats as any).skewness?.toFixed(4)],
-                      [ec.ts.excessKurt, (tsResult.descriptive_stats as any).excess_kurtosis?.toFixed(4)],
+                      [ec.ts.mean, (tsResult?.descriptive_stats as any)?.mean?.toFixed(6)],
+                      [ec.ts.stdDev, (tsResult?.descriptive_stats as any)?.std?.toFixed(6)],
+                      [ec.ts.skewness, (tsResult?.descriptive_stats as any)?.skewness?.toFixed(4)],
+                      [ec.ts.excessKurt, (tsResult?.descriptive_stats as any)?.excess_kurtosis?.toFixed(4)],
                     ]}
                   />
                 </Panel>
@@ -145,10 +145,16 @@ export default function Econometrics() {
                         name: 'ACF',
                       }, {
                         x: acfResult.lags,
-                        y: (acfResult.acf_confint as number[][]).map((ci: number[], i: number) => ci[1] - (acfResult.acf as number[])[i]),
+                        y: (acfResult.lags as number[]).map(() => acfResult.significance_bound),
                         type: 'scatter', mode: 'lines',
                         line: { color: '#ef4444', dash: 'dash' },
                         name: ec.ts.ci95,
+                      }, {
+                        x: acfResult.lags,
+                        y: (acfResult.lags as number[]).map(() => -(acfResult.significance_bound as number)),
+                        type: 'scatter', mode: 'lines',
+                        line: { color: '#ef4444', dash: 'dash' },
+                        showlegend: false,
                       }]}
                       layout={{
                         paper_bgcolor: '#0f1117', plot_bgcolor: '#0f1117',
@@ -170,6 +176,18 @@ export default function Econometrics() {
                         type: 'bar',
                         marker: { color: '#3b82f6', opacity: 0.7 },
                         name: 'PACF',
+                      }, {
+                        x: acfResult.lags,
+                        y: (acfResult.lags as number[]).map(() => acfResult.significance_bound),
+                        type: 'scatter', mode: 'lines',
+                        line: { color: '#ef4444', dash: 'dash' },
+                        name: ec.ts.ci95,
+                      }, {
+                        x: acfResult.lags,
+                        y: (acfResult.lags as number[]).map(() => -(acfResult.significance_bound as number)),
+                        type: 'scatter', mode: 'lines',
+                        line: { color: '#ef4444', dash: 'dash' },
+                        showlegend: false,
                       }]}
                       layout={{
                         paper_bgcolor: '#0f1117', plot_bgcolor: '#0f1117',
