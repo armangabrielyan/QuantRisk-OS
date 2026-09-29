@@ -182,6 +182,7 @@ from app.api.data import router as data_router
 from app.api.reports import router as reports_router
 from app.api.frm_trainer import router as frm_trainer_router
 from app.api.op_risk import router as op_risk_router
+from app.api.risk_intelligence import router as risk_intelligence_router
 
 app.include_router(market_risk_router)
 app.include_router(credit_risk_router)
@@ -193,3 +194,4 @@ app.include_router(data_router)
 app.include_router(reports_router)
 app.include_router(frm_trainer_router)
 app.include_router(op_risk_router)
+app.include_router(risk_intelligence_router)

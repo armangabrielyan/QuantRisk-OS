@@ -9,10 +9,11 @@ export const ru: Translations = {
     creditAlm: 'Кредитный риск & УАП',
     econometrics: 'Эконометрика',
     portfolio: 'Портфель',
-    frmTrainer: 'Тренажёр FRM',
+    frmTrainer: 'Тренажёр CFA & FRM',
     crisisSandbox: 'Стресс-тестирование',
     reports: 'Отчёты',
     opRisk: 'Операционный риск',
+    riskIntel: 'Монитор событий',
     appName: 'QuantRisk OS',
     version: 'v1.0.0',
   },
@@ -491,8 +492,8 @@ export const ru: Translations = {
   // ── Тренажёр FRM ──────────────────────────────────────────────────────────────
 
   frm: {
-    title: 'Тренажёр FRM',
-    subtitle: 'GARP FRM Часть I & II — Задачи с расчётами',
+    title: 'Тренажёр CFA & FRM Prep',
+    subtitle: 'Задачи по количественным методам, деривативам, бондам и регуляторным рискам',
     startTitle: 'Начать сессию тестирования',
     numQuestions: 'Количество вопросов',
     categoryFilter: 'Фильтр по категории',

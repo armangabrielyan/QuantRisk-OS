@@ -7,10 +7,11 @@ export const en = {
     creditAlm: 'Credit & ALM',
     econometrics: 'Econometrics',
     portfolio: 'Portfolio',
-    frmTrainer: 'FRM Trainer',
+    frmTrainer: 'CFA & FRM Prep',
     crisisSandbox: 'Crisis Sandbox',
     reports: 'Reports',
     opRisk: 'Operational Risk',
+    riskIntel: 'Risk Intelligence',
     appName: 'QuantRisk OS',
     version: 'v1.0.0',
   },
@@ -489,8 +490,8 @@ export const en = {
   // ── FRM Trainer ─────────────────────────────────────────────────────────────
 
   frm: {
-    title: 'FRM Trainer',
-    subtitle: 'GARP FRM Part I & II — Calculation-Heavy Question Bank',
+    title: 'CFA & FRM Prep',
+    subtitle: 'Quantitative Methods, Derivatives, Bonds, and Regulatory Risks',
     startTitle: 'Start a Quiz Session',
     numQuestions: 'Number of Questions',
     categoryFilter: 'Category Filter',

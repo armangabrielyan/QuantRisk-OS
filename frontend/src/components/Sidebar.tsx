@@ -17,6 +17,7 @@ const navItems = [
   { to: '/frm-trainer', icon: BookOpen, labelKey: 'frmTrainer' as const },
   { to: '/stress', icon: Zap, labelKey: 'crisisSandbox' as const },
   { to: '/op-risk', icon: AlertTriangle, labelKey: 'opRisk' as const },
+  { to: '/risk-intelligence', icon: Globe, labelKey: 'riskIntel' as const },
   { to: '/reports', icon: FileText, labelKey: 'reports' as const },
 ]
 
