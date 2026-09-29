@@ -43,14 +43,14 @@ export default function Reports() {
     try {
       const res = await reportsApi.riskCommittee({
         portfolio_name: data.portfolio_name, portfolio_value: data.portfolio_value,
-        var_limit: data.var_limit, var_99: data.var_99, es_99: data.es_99,
-        annual_vol: data.annual_vol, sharpe: data.sharpe, max_drawdown: data.max_drawdown,
-        expected_loss: data.expected_loss, total_ead: data.total_ead,
-        weighted_pd: data.weighted_pd, weighted_lgd: data.weighted_lgd,
+        var_limit: data.var_limit, var_1d_99: data.var_99, es_1d_99: data.es_99,
+        volatility_annual: data.annual_vol, sharpe_ratio: data.sharpe, max_drawdown: data.max_drawdown,
+        total_el: data.expected_loss, total_ead: data.total_ead,
+        weighted_avg_pd: data.weighted_pd, weighted_avg_lgd: data.weighted_lgd,
         lcr: data.lcr, nsfr: data.nsfr, duration_gap: data.duration_gap,
         equity_sensitivity: data.equity_sensitivity,
-        scenario_name: data.scenario_name, total_stress_loss: data.total_stress_loss,
-        loss_pct: data.loss_pct, var_change: data.var_change, stressed_lcr: data.stressed_lcr,
+        stress_scenario_name: data.scenario_name, stress_total_loss: data.total_stress_loss,
+        stress_pct_loss: data.loss_pct, stress_var_change: data.var_change, stress_lcr_stressed: data.stressed_lcr,
         analyst_notes: data.analyst_notes,
       })
       setReport(res.data.data)

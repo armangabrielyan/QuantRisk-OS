@@ -14,7 +14,15 @@ export const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const message = error.response?.data?.detail || error.message || 'An error occurred'
+    let message = error.message || 'An error occurred'
+    const detail = error.response?.data?.detail
+    if (detail) {
+      if (Array.isArray(detail)) {
+        message = detail.map(d => `${d.loc?.join('.') || 'Error'}: ${d.msg}`).join(', ')
+      } else {
+        message = detail
+      }
+    }
     return Promise.reject(new Error(message))
   }
 )

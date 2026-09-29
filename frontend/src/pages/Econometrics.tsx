@@ -39,7 +39,7 @@ export default function Econometrics() {
     try {
       const series = await getSeries()
       const [ts, acf] = await Promise.all([
-        econometricsApi.timeSeriesDiagnostics({ series, maxlag: null, regression: adfRegression, nlags }),
+        econometricsApi.timeSeries({ series, maxlag: null, regression: adfRegression, nlags }),
         econometricsApi.acfPacf({ series, nlags }),
       ])
       setTsResult(ts.data.data)
@@ -55,7 +55,7 @@ export default function Econometrics() {
       const y = returns.slice(1)
       const X = returns.slice(0, -1).map(r => [r])
       const [ols, diag] = await Promise.all([
-        econometricsApi.olsRegression({ y, X, feature_names: ['lag_return'], add_constant: true }),
+        econometricsApi.ols({ y, X, feature_names: ['lag_return'], add_constant: true }),
         econometricsApi.diagnostics({ y, X }),
       ])
       setOlsResult(ols.data.data)
@@ -145,7 +145,7 @@ export default function Econometrics() {
                         name: 'ACF',
                       }, {
                         x: acfResult.lags,
-                        y: (acfResult.acf_confint as number[][]).map((ci: number[]) => ci[1] - (acfResult.acf as number[])[(acfResult.lags as number[]).indexOf(acfResult.lags[(acfResult.acf_confint as number[][]).indexOf(ci)])]),
+                        y: (acfResult.acf_confint as number[][]).map((ci: number[], i: number) => ci[1] - (acfResult.acf as number[])[i]),
                         type: 'scatter', mode: 'lines',
                         line: { color: '#ef4444', dash: 'dash' },
                         name: ec.ts.ci95,
