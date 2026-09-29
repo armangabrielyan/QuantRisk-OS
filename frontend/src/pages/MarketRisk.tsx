@@ -97,7 +97,7 @@ export default function MarketRisk() {
     try {
       const strikes = [80, 85, 90, 95, 100, 105, 110, 115, 120].map(k => k * surfaceSpot / 100)
       const maturities = [0.083, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
-      const res = await marketRiskApi.volatilitySurface({ S: surfaceSpot, strikes, maturities, r: surfaceRate })
+      const res = await marketRiskApi.volSurface({ S: surfaceSpot, strikes, maturities, r: surfaceRate })
       setSurfaceResult(res.data.data)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Calculation failed')
