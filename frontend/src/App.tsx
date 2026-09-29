@@ -43,7 +43,8 @@ export default function App() {
               <Route path="/credit-alm" element={<PageWrapper><CreditALM /></PageWrapper>} />
               <Route path="/econometrics" element={<PageWrapper><Econometrics /></PageWrapper>} />
               <Route path="/portfolio" element={<PageWrapper><Portfolio /></PageWrapper>} />
-              <Route path="/frm-trainer" element={<PageWrapper><FRMTrainer /></PageWrapper>} />
+              <Route path="/cfa-prep" element={<PageWrapper><FRMTrainer mode="cfa" /></PageWrapper>} />
+              <Route path="/frm-trainer" element={<PageWrapper><FRMTrainer mode="frm" /></PageWrapper>} />
               <Route path="/stress" element={<PageWrapper><CrisisSandbox /></PageWrapper>} />
               <Route path="/op-risk" element={<PageWrapper><OperationalRisk /></PageWrapper>} />
               <Route path="/risk-intelligence" element={<PageWrapper><RiskIntelligence /></PageWrapper>} />

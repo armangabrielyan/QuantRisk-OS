@@ -14,6 +14,7 @@ const navItems = [
   { to: '/credit-alm', icon: CreditCard, labelKey: 'creditAlm' as const },
   { to: '/econometrics', icon: BarChart2, labelKey: 'econometrics' as const },
   { to: '/portfolio', icon: PieChart, labelKey: 'portfolio' as const },
+  { to: '/cfa-prep', icon: BookOpen, labelKey: 'cfaTrainer' as const },
   { to: '/frm-trainer', icon: BookOpen, labelKey: 'frmTrainer' as const },
   { to: '/stress', icon: Zap, labelKey: 'crisisSandbox' as const },
   { to: '/op-risk', icon: AlertTriangle, labelKey: 'opRisk' as const },

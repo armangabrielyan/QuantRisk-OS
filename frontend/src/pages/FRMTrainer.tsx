@@ -19,7 +19,7 @@ interface Question {
 }
 interface SessionAnswer { question_id: number; correct: boolean; your_answer: string; correct_answer: string; explanation: string; formula?: string; derivation?: string; common_mistake?: string; question_prompt: string }
 
-export default function FRMTrainer() {
+export default function FRMTrainer({ mode = 'frm' }: { mode?: 'cfa' | 'frm' }) {
   const { t } = useI18n()
   const fm = t.frm
   const [screen, setScreen] = useState<Screen>('start')
@@ -116,7 +116,7 @@ export default function FRMTrainer() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <SectionHeader title={fm.title} subtitle={fm.subtitle} />
+      <SectionHeader title={mode === 'cfa' ? t.nav.cfaTrainer : fm.title} subtitle={fm.subtitle} />
       {error && <ErrorMessage message={error} onRetry={() => setError(null)} />}
 
       {/* ── Start Screen ─────────────────────────────────────────────────── */}
