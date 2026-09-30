@@ -109,3 +109,14 @@ async def rp_endpoint(req: RiskParityRequest):
 @router.post("/concentration")
 async def hhi_endpoint(req: HHIRequest):
     return {"status": "success", "data": hhi_concentration(req.weights)}
+
+@router.get("/summary")
+async def portfolio_summary():
+    """Placeholder for portfolio summary metrics."""
+    return {
+        "status": "success",
+        "data": {
+            "value": 10000000,
+            "currency": "USD"
+        }
+    }

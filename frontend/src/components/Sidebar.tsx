@@ -11,15 +11,16 @@ import { useI18n } from '@/i18n'
 const navItems = [
   { to: '/', icon: LayoutDashboard, labelKey: 'overview' as const },
   { to: '/market-risk', icon: TrendingDown, labelKey: 'marketRisk' as const },
-  { to: '/credit-alm', icon: CreditCard, labelKey: 'creditAlm' as const },
-  { to: '/econometrics', icon: BarChart2, labelKey: 'econometrics' as const },
+  { to: '/credit-risk', icon: CreditCard, labelKey: 'creditRisk' as const },
+  { to: '/alm-liquidity', icon: Zap, labelKey: 'almLiquidity' as const },
   { to: '/portfolio', icon: PieChart, labelKey: 'portfolio' as const },
-  { to: '/cfa-prep', icon: BookOpen, labelKey: 'cfaTrainer' as const },
-  { to: '/frm-trainer', icon: BookOpen, labelKey: 'frmTrainer' as const },
-  { to: '/stress', icon: Zap, labelKey: 'crisisSandbox' as const },
+  { to: '/stress-testing', icon: Zap, labelKey: 'crisisSandbox' as const },
   { to: '/op-risk', icon: AlertTriangle, labelKey: 'opRisk' as const },
+  { to: '/econometrics', icon: BarChart2, labelKey: 'econometrics' as const },
   { to: '/risk-intelligence', icon: Globe, labelKey: 'riskIntel' as const },
   { to: '/reports', icon: FileText, labelKey: 'reports' as const },
+  { to: '/cfa-prep', icon: BookOpen, labelKey: 'cfaTrainer' as const },
+  { to: '/frm-trainer', icon: BookOpen, labelKey: 'frmTrainer' as const },
 ]
 
 function NavItem({ to, icon: Icon, label, onClick }: { to: string; icon: React.ElementType; label: string; onClick?: () => void }) {

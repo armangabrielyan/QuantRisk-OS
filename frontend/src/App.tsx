@@ -7,7 +7,8 @@ import { useI18n } from '@/i18n'
 // Lazy-load pages for fast initial load
 const Overview = lazy(() => import('@/pages/Overview'))
 const MarketRisk = lazy(() => import('@/pages/MarketRisk'))
-const CreditALM = lazy(() => import('@/pages/CreditALM'))
+const CreditRisk = lazy(() => import('@/pages/CreditRisk'))
+const ALMLiquidity = lazy(() => import('@/pages/ALMLiquidity'))
 const Econometrics = lazy(() => import('@/pages/Econometrics'))
 const Portfolio = lazy(() => import('@/pages/Portfolio'))
 const FRMTrainer = lazy(() => import('@/pages/FRMTrainer'))
@@ -40,12 +41,13 @@ export default function App() {
             <Routes>
               <Route path="/" element={<PageWrapper><Overview /></PageWrapper>} />
               <Route path="/market-risk" element={<PageWrapper><MarketRisk /></PageWrapper>} />
-              <Route path="/credit-alm" element={<PageWrapper><CreditALM /></PageWrapper>} />
+              <Route path="/credit-risk" element={<PageWrapper><CreditRisk /></PageWrapper>} />
+              <Route path="/alm-liquidity" element={<PageWrapper><ALMLiquidity /></PageWrapper>} />
               <Route path="/econometrics" element={<PageWrapper><Econometrics /></PageWrapper>} />
               <Route path="/portfolio" element={<PageWrapper><Portfolio /></PageWrapper>} />
               <Route path="/cfa-prep" element={<PageWrapper><FRMTrainer mode="cfa" /></PageWrapper>} />
               <Route path="/frm-trainer" element={<PageWrapper><FRMTrainer mode="frm" /></PageWrapper>} />
-              <Route path="/stress" element={<PageWrapper><CrisisSandbox /></PageWrapper>} />
+              <Route path="/stress-testing" element={<PageWrapper><CrisisSandbox /></PageWrapper>} />
               <Route path="/op-risk" element={<PageWrapper><OperationalRisk /></PageWrapper>} />
               <Route path="/risk-intelligence" element={<PageWrapper><RiskIntelligence /></PageWrapper>} />
               <Route path="/reports" element={<PageWrapper><Reports /></PageWrapper>} />

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { marketRiskApi, dataApi } from '@/services/api'
 import { MetricCard, Panel, SectionHeader, LoadingSpinner, StatusBadge, DataTable } from '@/components/ui'
+import { KPICards } from '@/components/KPICards'
+import { TopRisks } from '@/components/TopRisks'
 import { fmtCurrency, fmtPct, fmtBps } from '@/lib/utils'
 import { useI18n } from '@/i18n'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -110,36 +112,7 @@ export default function Overview() {
       )}
 
       {/* Key metrics — 2 cols on mobile, 4 on md+ */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
-        <MetricCard
-          label={ov.portfolioValue}
-          value={fmtCurrency(10_000_000)}
-          subValue={ov.portfolioRef}
-        />
-        <MetricCard
-          label={ov.var99}
-          value={fmtCurrency(m.var_99)}
-          subValue={`${fmtPct(m.var_pct)} ${ov.varSubtext}`}
-          status={m.var_pct < 2.0 ? 'pass' : 'warn'}
-        />
-        <MetricCard
-          label={ov.annualVol}
-          value={fmtPct(m.annual_vol * 100)}
-          subValue={ov.ewmaLabel}
-        />
-        <MetricCard
-          label={ov.sharpe}
-          value={m.sharpe?.toFixed(3)}
-          subValue={ov.sharpeRf}
-          status={m.sharpe > 0.5 ? 'pass' : m.sharpe > 0 ? 'warn' : 'fail'}
-        />
-        <MetricCard
-          label={ov.lcr}
-          value={fmtPct(m.lcr * 100)}
-          subValue={ov.lcrMin}
-          status={m.lcr >= 1 ? 'pass' : 'fail'}
-        />
-      </div>
+      <KPICards metrics={metrics} ov={ov} />
 
       {/* Chart + Risk Summary — stacked on mobile, side by side on lg */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -170,12 +143,15 @@ export default function Overview() {
           </div>
         </Panel>
 
-        <Panel title={ov.riskSummary}>
-          <DataTable
-            headers={[ov.metric, ov.value, ov.statusCol]}
-            rows={riskRows.map(r => [r[0], `${r[1]} ${r[2]}`, r[3]])}
-          />
-        </Panel>
+        <div className="space-y-4">
+          <Panel title={ov.riskSummary}>
+            <DataTable
+              headers={[ov.metric, ov.value, ov.statusCol]}
+              rows={riskRows.map(r => [r[0], `${r[1]} ${r[2]}`, r[3]])}
+            />
+          </Panel>
+          <TopRisks ov={ov} />
+        </div>
       </div>
     </div>
   )
