@@ -328,8 +328,8 @@ export default function ALMLiquidity() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                 <MetricCard label={t.newFeatures.price} value={fmtCurrency(bondResult.price as number)} />
                 <MetricCard label={t.newFeatures.dv01} value={(bondResult.dv01 as number).toFixed(4)} />
-                <MetricCard label={t.newFeatures.macDur} value={(bondResult.mac_duration as number).toFixed(4)} />
-                <MetricCard label={t.newFeatures.modDur} value={(bondResult.mod_duration as number).toFixed(4)} />
+                <MetricCard label={t.newFeatures.macDur} value={(bondResult.macaulay_duration as number).toFixed(4)} />
+                <MetricCard label={t.newFeatures.modDur} value={(bondResult.modified_duration as number).toFixed(4)} />
                 <MetricCard label={t.newFeatures.convexity} value={(bondResult.convexity as number).toFixed(4)} />
               </div>
             )}
