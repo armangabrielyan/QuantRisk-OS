@@ -44,7 +44,7 @@ export default function CrisisSandbox() {
     if (Object.keys(presets).length > 0) return presets
     try {
       const res = await stressApi.scenarios()
-      const p = res.data.data.scenarios ?? {}
+      const p = res.data.data ?? {}
       setPresets(p)
       return p
     } catch {
@@ -54,15 +54,15 @@ export default function CrisisSandbox() {
 
   async function applyPreset(key: string) {
     const loadedPresets = await loadPresets()
-    const p = loadedPresets[key] as Record<string, unknown>
-    if (!p) return
+    const p = loadedPresets[key] as any
+    if (!p || !p.shocks) return
     setShocks({
-      equity_shock: p.equity_shock as number,
-      vol_shock: p.vol_shock as number,
-      rate_shock: p.rate_shock as number,
-      credit_spread_shock: p.credit_spread_shock as number,
-      liquidity_shock: p.liquidity_shock as number,
-      deposit_outflow: p.deposit_outflow as number,
+      equity_shock: p.shocks.equity_shock as number,
+      vol_shock: p.shocks.vol_shock as number,
+      rate_shock: p.shocks.rate_shock as number,
+      credit_spread_shock: p.shocks.credit_spread_shock as number,
+      liquidity_shock: p.shocks.liquidity_shock as number,
+      deposit_outflow: p.shocks.deposit_outflow as number,
     })
     setActivePreset(key)
   }
