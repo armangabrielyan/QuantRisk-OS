@@ -166,3 +166,37 @@ class MarketData(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     instrument = relationship("Instrument", back_populates="market_data")
+
+class RiskLimit(Base):
+    __tablename__ = "risk_limits"
+
+    id = Column(Integer, primary_key=True, index=True)
+    entity_id = Column(String(50), nullable=False)
+    limit_type = Column(String(50), nullable=False)
+    warning_limit = Column(Float, nullable=False)
+    hard_limit = Column(Float, nullable=False)
+    current_value = Column(Float, nullable=True, default=0.0)
+    utilization_pct = Column(Float, nullable=True, default=0.0)
+    status = Column(String(20), default="GREEN")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class RiskAlert(Base):
+    __tablename__ = "risk_alerts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    alert_level = Column(String(20), nullable=False) # INFO, WARNING, HIGH, CRITICAL
+    message = Column(String(500), nullable=False)
+    source = Column(String(100), nullable=True)
+    status = Column(String(20), default="ACTIVE")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    resolved_at = Column(DateTime, nullable=True)
+
+class RiskAppetite(Base):
+    __tablename__ = "risk_appetite"
+
+    id = Column(Integer, primary_key=True, index=True)
+    statement = Column(Text, nullable=False)
+    metrics = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

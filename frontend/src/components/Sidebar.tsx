@@ -10,6 +10,7 @@ import { useI18n } from '@/i18n'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, labelKey: 'overview' as const },
+  { to: '/limits', icon: AlertTriangle, labelKey: 'limits' as const },
   { to: '/market-risk', icon: TrendingDown, labelKey: 'marketRisk' as const },
   { to: '/credit-risk', icon: CreditCard, labelKey: 'creditRisk' as const },
   { to: '/alm-liquidity', icon: Zap, labelKey: 'almLiquidity' as const },
@@ -40,7 +41,7 @@ function NavItem({ to, icon: Icon, label, onClick }: { to: string; icon: React.E
       }
     >
       <Icon className="w-4 h-4 flex-shrink-0" />
-      <span className="truncate">{label}</span>
+      <span className="truncate">{label || 'Limits & Alerts'}</span>
     </NavLink>
   )
 }

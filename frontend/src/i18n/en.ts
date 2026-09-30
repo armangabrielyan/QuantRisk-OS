@@ -3,6 +3,7 @@ export const en = {
 
   nav: {
     overview: 'Overview',
+    limits: 'Limits & Alerts',
     marketRisk: 'Market Risk',
     creditRisk: 'Credit Risk',
     almLiquidity: 'ALM & Liquidity',

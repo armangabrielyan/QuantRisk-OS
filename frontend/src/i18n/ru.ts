@@ -5,6 +5,7 @@ export const ru: Translations = {
 
   nav: {
     overview: 'Обзор',
+    limits: 'Лимиты и Алерты',
     marketRisk: 'Рыночный риск',
     creditRisk: 'Кредитный риск',
     almLiquidity: 'УАП & Ликвидность',

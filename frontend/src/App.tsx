@@ -16,6 +16,7 @@ const CrisisSandbox = lazy(() => import('@/pages/CrisisSandbox'))
 const OperationalRisk = lazy(() => import('@/pages/OperationalRisk'))
 const RiskIntelligence = lazy(() => import('@/pages/RiskIntelligence'))
 const Reports = lazy(() => import('@/pages/Reports'))
+const RiskLimits = lazy(() => import('@/pages/RiskLimits'))
 
 function PageWrapper({ children }: { children: React.ReactNode }) {
   const { t } = useI18n()
@@ -51,6 +52,7 @@ export default function App() {
               <Route path="/op-risk" element={<PageWrapper><OperationalRisk /></PageWrapper>} />
               <Route path="/risk-intelligence" element={<PageWrapper><RiskIntelligence /></PageWrapper>} />
               <Route path="/reports" element={<PageWrapper><Reports /></PageWrapper>} />
+              <Route path="/limits" element={<PageWrapper><RiskLimits /></PageWrapper>} />
             </Routes>
           </div>
         </main>
