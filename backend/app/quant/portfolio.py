@@ -343,3 +343,96 @@ def hhi_concentration(weights: list[float]) -> dict:
         "hhi": float(hhi),
         "interpretation": interpretation
     }
+
+def marginal_var(weights: list[float], cov_matrix: list[list[float]], confidence: float = 0.99) -> dict:
+    import numpy as np
+    from scipy import stats
+    w = np.array(weights)
+    cov = np.array(cov_matrix)
+    sigma_p = np.sqrt(np.dot(w.T, np.dot(cov, w)))
+    if sigma_p == 0:
+        return {"marginal_var": np.zeros_like(w).tolist()}
+    m_var = np.dot(cov, w) / sigma_p
+    z_alpha = stats.norm.ppf(confidence)
+    return {"marginal_var": (m_var * z_alpha).tolist()}
+
+def component_var(weights: list[float], cov_matrix: list[list[float]], portfolio_value: float, confidence: float = 0.99) -> dict:
+    import numpy as np
+    m_var_dict = marginal_var(weights, cov_matrix, confidence)
+    c_var = np.array(weights) * np.array(m_var_dict["marginal_var"]) * portfolio_value
+    return {"component_var": c_var.tolist()}
+
+def incremental_var(weights: list[float], cov_matrix: list[list[float]], new_asset_weight: float, new_asset_cov: list[float], confidence: float = 0.99) -> dict:
+    import numpy as np
+    from scipy import stats
+    w = np.array(weights)
+    cov = np.array(cov_matrix)
+    
+    # Original portfolio variance
+    var_p = np.dot(w.T, np.dot(cov, w))
+    
+    # New portfolio weights (re-normalized)
+    w_new = np.append(w, new_asset_weight)
+    w_new = w_new / np.sum(w_new)
+    
+    # New covariance matrix
+    n = len(w)
+    cov_new = np.zeros((n+1, n+1))
+    cov_new[:n, :n] = cov
+    cov_new[:n, n] = new_asset_cov[:-1]
+    cov_new[n, :n] = new_asset_cov[:-1]
+    cov_new[n, n] = new_asset_cov[-1]
+    
+    # New portfolio variance
+    var_p_new = np.dot(w_new.T, np.dot(cov_new, w_new))
+    
+    z_alpha = stats.norm.ppf(confidence)
+    iv = z_alpha * (np.sqrt(var_p_new) - np.sqrt(var_p))
+    return {"incremental_var": float(iv)}
+
+def var_attribution(weights: list[float], component_vars: list[float]) -> dict:
+    import numpy as np
+    c_var = np.array(component_vars)
+    total_var = np.sum(c_var)
+    if total_var == 0:
+        return {"attribution": np.zeros_like(c_var).tolist()}
+    attribution = c_var / total_var
+    return {"attribution": attribution.tolist()}
+
+def correlation_stress(weights: list[float], cov_matrix: list[list[float]], stress_factor: float = 1.5) -> dict:
+    import numpy as np
+    w = np.array(weights)
+    cov = np.array(cov_matrix)
+    
+    # Decompose into vol and correlation
+    vols = np.sqrt(np.diag(cov))
+    outer_vols = np.outer(vols, vols)
+    corr = cov / (outer_vols + 1e-8)
+    
+    # Stress correlation (towards 1.0)
+    stressed_corr = corr * stress_factor
+    np.fill_diagonal(stressed_corr, 1.0)
+    stressed_corr = np.clip(stressed_corr, -1.0, 1.0)
+    
+    stressed_cov = stressed_corr * outer_vols
+    stressed_risk = np.sqrt(np.dot(w.T, np.dot(stressed_cov, w)))
+    
+    return {"stressed_risk": float(stressed_risk), "stressed_cov": stressed_cov.tolist()}
+
+def diversification_benefit(weights: list[float], cov_matrix: list[list[float]], individual_vars: list[float]) -> dict:
+    import numpy as np
+    w = np.array(weights)
+    cov = np.array(cov_matrix)
+    port_var = np.sqrt(np.dot(w.T, np.dot(cov, w)))
+    
+    sum_indiv_vars = np.sum(individual_vars)
+    benefit = sum_indiv_vars - port_var
+    return {"benefit": float(benefit), "benefit_pct": float(benefit / sum_indiv_vars * 100) if sum_indiv_vars > 0 else 0.0}
+
+def pnl_attribution(pnl: float, factors: dict) -> dict:
+    total_factor_impact = sum(factors.values())
+    unexplained = pnl - total_factor_impact
+    attribution = {k: v for k, v in factors.items()}
+    attribution["unexplained"] = unexplained
+    return {"attribution": attribution}
+

@@ -9,7 +9,7 @@ import { fmtPct } from '@/lib/utils'
 import { useI18n } from '@/i18n'
 import Plot from 'react-plotly.js'
 
-type Tab = 'analytics' | 'frontier' | 'blackLitterman' | 'riskParity' | 'concentration'
+type Tab = 'analytics' | 'frontier' | 'blackLitterman' | 'riskParity' | 'concentration' | 'advancedAnalytics'
 
 interface Asset { id: number; ticker: string; weight: number }
 
@@ -128,6 +128,7 @@ export default function Portfolio() {
     { key: 'blackLitterman', label: t.newFeatures.blackLitterman },
     { key: 'riskParity', label: t.newFeatures.riskParity },
     { key: 'concentration', label: t.newFeatures.concentration },
+    { key: 'advancedAnalytics', label: 'Advanced Analytics' },
   ]
 
   const weightTotal = assets.reduce((s, a) => s + a.weight, 0)
@@ -454,6 +455,53 @@ export default function Portfolio() {
                 <MetricCard label={t.newFeatures.hhi} value={(concResult.hhi as number).toFixed(4)} />
                 <MetricCard label={t.newFeatures.interpretation} value={concResult.interpretation as string} />
               </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Advanced Analytics ────────────────────────────────────────────── */}
+      {activeTab === 'advancedAnalytics' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Panel title="Advanced Actions">
+            <div className="space-y-3">
+              <Button onClick={async () => {
+                setLoading(true); setError(null);
+                try {
+                  const { matrix } = await getReturns();
+                  const w = assets.map(a => a.weight);
+                  const results = await Promise.allSettled([
+                    portfolioApi.pnlAttribution({ returns_matrix: matrix, weights: w }),
+                    portfolioApi.varAttribution({ returns_matrix: matrix, weights: w }),
+                    portfolioApi.incrementalVar({ returns_matrix: matrix, weights: w }),
+                    portfolioApi.marginalVar({ returns_matrix: matrix, weights: w }),
+                    portfolioApi.componentVar({ returns_matrix: matrix, weights: w }),
+                    portfolioApi.correlationStress({ returns_matrix: matrix, weights: w, stress_factors: [1.2] })
+                  ]);
+                  const getRes = (res: any) => res.status === 'fulfilled' ? res.value.data.data : { error: res.reason?.message || 'Failed' };
+                  setAnalyticsResult({
+                    pnl: getRes(results[0]),
+                    varAttr: getRes(results[1]),
+                    inc: getRes(results[2]),
+                    marg: getRes(results[3]),
+                    comp: getRes(results[4]),
+                    corr: getRes(results[5])
+                  });
+                } catch(e:any) { setError(e.message) }
+                setLoading(false);
+              }} disabled={loading} className="w-full">
+                {loading ? t.common.calculating : 'Run All Advanced Metrics'}
+              </Button>
+            </div>
+          </Panel>
+          <div className="space-y-4">
+            {loading && <LoadingSpinner message={t.common.calculating} />}
+            {analyticsResult?.pnl && !loading && (
+              <Panel title="Advanced Results">
+                <pre className="text-xs text-slate-300 bg-[#0a0a0f] p-4 rounded overflow-auto h-96">
+                  {JSON.stringify(analyticsResult, null, 2)}
+                </pre>
+              </Panel>
             )}
           </div>
         </div>

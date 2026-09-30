@@ -324,3 +324,42 @@ def transition_matrix_multiplier(current_ratings: list[str], transition_matrix: 
         "current_distribution": {k: v/total for k, v in counts.items()},
         "expected_future_distribution": {k: v/total for k, v in expected_future.items()}
     }
+
+def credit_concentration(exposures: list[dict]) -> dict:
+    import numpy as np
+    eads = np.array([float(e["ead"]) for e in exposures])
+    total_ead = np.sum(eads)
+    if total_ead == 0:
+        return {"hhi": 0.0, "interpretation": "No Exposure"}
+    weights = eads / total_ead
+    hhi = np.sum(weights**2) * 10000
+    interpretation = "Highly Concentrated" if hhi > 2500 else "Moderately Concentrated" if hhi > 1500 else "Diversified"
+    return {"hhi": float(hhi), "interpretation": interpretation}
+
+def counterparty_concentration(exposures: list[dict]) -> dict:
+    import numpy as np
+    from collections import defaultdict
+    cp_ead = defaultdict(float)
+    for e in exposures:
+        cp_ead[e.get("counterparty", "Unknown")] += float(e["ead"])
+    total_ead = sum(cp_ead.values())
+    if total_ead == 0:
+        return {"hhi": 0.0, "interpretation": "No Exposure"}
+    weights = np.array(list(cp_ead.values())) / total_ead
+    hhi = np.sum(weights**2) * 10000
+    interpretation = "Highly Concentrated" if hhi > 2500 else "Moderately Concentrated" if hhi > 1500 else "Diversified"
+    return {"hhi": float(hhi), "interpretation": interpretation, "counterparty_exposure": dict(cp_ead)}
+
+def country_sector_hhi(exposures: list[dict]) -> dict:
+    import numpy as np
+    from collections import defaultdict
+    sector_ead = defaultdict(float)
+    for e in exposures:
+        sector_ead[e.get("sector", "Unknown")] += float(e["ead"])
+    total_ead = sum(sector_ead.values())
+    if total_ead == 0:
+        return {"hhi": 0.0, "interpretation": "No Exposure"}
+    weights = np.array(list(sector_ead.values())) / total_ead
+    hhi = np.sum(weights**2) * 10000
+    interpretation = "Highly Concentrated" if hhi > 2500 else "Moderately Concentrated" if hhi > 1500 else "Diversified"
+    return {"hhi": float(hhi), "interpretation": interpretation, "sector_exposure": dict(sector_ead)}

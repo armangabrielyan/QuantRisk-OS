@@ -50,6 +50,8 @@ export const creditRiskApi = {
   pfeCva: (data: object) => api.post('/credit-risk/pfe-cva', data),
   scoringAdvMetrics: (data: object) => api.post('/credit-risk/advanced-metrics', data),
   transitionMatrix: (data: object) => api.post('/credit-risk/transition-matrix', data),
+  concentration: (data: object) => api.post('/credit-risk/concentration', data),
+  hhi: (data: object) => api.post('/credit-risk/hhi', data),
 }
 
 // ── ALM ───────────────────────────────────────────────────────────────────────
@@ -60,6 +62,9 @@ export const almApi = {
   nsfr: (data: object) => api.post('/alm/nsfr', data),
   nssYieldCurve: (data: object) => api.post('/alm/nelson-siegel', data),
   bondMetrics: (data: object) => api.post('/alm/bond-metrics', data),
+  repricingGap: (data: object) => api.post('/alm/repricing-gap', data),
+  cumulativeGap: (data: object) => api.post('/alm/cumulative-gap', data),
+  interestRateGap: (data: object) => api.post('/alm/interest-rate-gap', data),
 }
 
 // ── Econometrics ──────────────────────────────────────────────────────────────
@@ -89,6 +94,12 @@ export const portfolioApi = {
   blackLitterman: (data: object) => api.post('/portfolio/black-litterman', data),
   riskParity: (data: object) => api.post('/portfolio/risk-parity', data),
   concentration: (data: object) => api.post('/portfolio/concentration', data),
+  incrementalVar: (data: object) => api.post('/portfolio/incremental-var', data),
+  marginalVar: (data: object) => api.post('/portfolio/marginal-var', data),
+  componentVar: (data: object) => api.post('/portfolio/component-var', data),
+  correlationStress: (data: object) => api.post('/portfolio/correlation-stress', data),
+  varAttribution: (data: object) => api.post('/portfolio/var-attribution', data),
+  pnlAttribution: (data: object) => api.post('/portfolio/pnl-attribution', data),
 }
 
 // ── Stress Testing ────────────────────────────────────────────────────────────
@@ -97,6 +108,7 @@ export const stressApi = {
   scenarios: () => api.get('/stress-testing/scenarios'),
   apply: (data: object) => api.post('/stress-testing/apply', data),
   applyPreset: (data: object) => api.post('/stress-testing/apply-preset', data),
+  scenarioComparison: (data: object) => api.post('/stress-testing/scenario-comparison', data),
 }
 
 // ── FRM Trainer ───────────────────────────────────────────────────────────────

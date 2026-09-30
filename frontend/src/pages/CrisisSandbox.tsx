@@ -88,7 +88,12 @@ export default function CrisisSandbox() {
           return stressApi.apply({ ...portfolio, equity_shock: p.shocks.equity_shock as number, vol_shock: p.shocks.vol_shock as number, rate_shock: p.shocks.rate_shock as number, credit_spread_shock: p.shocks.credit_spread_shock as number, liquidity_shock: p.shocks.liquidity_shock as number, deposit_outflow: p.shocks.deposit_outflow as number, scenario_name: (p.name as string) ?? key })
         }).filter(Boolean)
       )
-      setCompResults(results.map(r => r?.data.data ?? {}))
+      const mappedResults = results.map(r => r?.data.data ?? {});
+      setCompResults(mappedResults);
+      // New: Use compare endpoint
+      const compareRes = await stressApi.scenarioComparison({ results: mappedResults });
+      setResult({ ...result, comparison_summary: compareRes.data.data })
+
     } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Comparison failed') }
     finally { setLoading(false) }
   }

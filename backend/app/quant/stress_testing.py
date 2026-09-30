@@ -216,3 +216,16 @@ def apply_stress_scenario(
 def get_scenario_presets() -> dict:
     """Return all predefined crisis scenario presets."""
     return CRISIS_SCENARIOS
+
+
+def scenario_comparison(results: list[dict]) -> dict:
+    comparison = {}
+    for res in results:
+        name = res['scenario_name']
+        comparison[name] = {
+            'pct_loss': res['impact']['pct_loss'],
+            'total_loss': res['impact']['total_loss'],
+            'var_change_pct': res['impact']['var_change_pct'],
+            'liquidity_impact': res['impact']['liquidity_impact']
+        }
+    return {'comparison': comparison}

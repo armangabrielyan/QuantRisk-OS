@@ -1,45 +1,19 @@
-import os
-import sys
+import numpy as np
 
-# Add the app to PYTHONPATH
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
+def marginal_var(weights: list[float], cov_matrix: list[list[float]], confidence: float = 0.99) -> list[float]:
+    w = np.array(weights)
+    cov = np.array(cov_matrix)
+    sigma_p = np.sqrt(np.dot(w.T, np.dot(cov, w)))
+    marginal_var = np.dot(cov, w) / sigma_p
+    z_alpha = 2.3263478740408408 # stats.norm.ppf(0.99)
+    return (marginal_var * z_alpha).tolist()
 
-from app.database.session import init_db
-from app.models.orm_models import RiskLimit, RiskAlert, RiskAppetite
-from sqlalchemy.orm import Session
-from app.database.session import SessionLocal
+def component_var(weights: list[float], cov_matrix: list[list[float]], portfolio_value: float, confidence: float = 0.99) -> list[float]:
+    m_var = marginal_var(weights, cov_matrix, confidence)
+    c_var = np.array(weights) * np.array(m_var) * portfolio_value
+    return c_var.tolist()
 
-def test_models():
-    init_db()
-    db: Session = SessionLocal()
-    try:
-        # Create a limit
-        limit = RiskLimit(entity_id="port_1", limit_type="VaR", warning_limit=100.0, hard_limit=200.0)
-        db.add(limit)
-        db.commit()
-        
-        # Query it
-        l = db.query(RiskLimit).filter(RiskLimit.entity_id == "port_1").first()
-        print("Created RiskLimit:", l.entity_id, l.limit_type)
-        
-        # Create an alert
-        alert = RiskAlert(alert_level="WARNING", message="Test alert")
-        db.add(alert)
-        db.commit()
-        
-        a = db.query(RiskAlert).first()
-        print("Created RiskAlert:", a.alert_level, a.message)
-        
-        # Create an appetite
-        appetite = RiskAppetite(statement="We accept moderate risk")
-        db.add(appetite)
-        db.commit()
-        
-        ap = db.query(RiskAppetite).first()
-        print("Created RiskAppetite:", ap.statement)
-        
-    finally:
-        db.close()
-
-if __name__ == "__main__":
-    test_models()
+w = [0.5, 0.5]
+cov = [[0.04, 0.01], [0.01, 0.09]]
+print("Marginal:", marginal_var(w, cov))
+print("Component:", component_var(w, cov, 1000))

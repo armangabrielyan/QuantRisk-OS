@@ -110,3 +110,39 @@ async def nss_endpoint(req: NSSRequest):
 @router.post("/bond-metrics")
 async def bond_metrics_endpoint(req: BondMetricsRequest):
     return {"status": "success", "data": bond_dv01_convexity(req.cashflows, req.times, req.yield_rate, req.current_price)}
+
+class GapRequest(BaseModel):
+    assets: list[dict]
+    liabilities: list[dict]
+    buckets: list[str]
+
+class LiquidityGapRequest(BaseModel):
+    cash_inflows: list[dict]
+    cash_outflows: list[dict]
+    buckets: list[str]
+
+class CumulativeGapRequest(BaseModel):
+    gap_dict: dict
+    buckets: list[str]
+
+class InterestRateGapRequest(BaseModel):
+    rsa: float
+    rsl: float
+
+from app.quant.alm import repricing_gap, liquidity_gap, cumulative_gap, interest_rate_gap
+
+@router.post("/repricing-gap")
+async def repricing_gap_endpoint(req: GapRequest):
+    return {"status": "success", "data": repricing_gap(req.assets, req.liabilities, req.buckets)}
+
+@router.post("/liquidity-gap")
+async def liquidity_gap_endpoint(req: LiquidityGapRequest):
+    return {"status": "success", "data": liquidity_gap(req.cash_inflows, req.cash_outflows, req.buckets)}
+
+@router.post("/cumulative-gap")
+async def cumulative_gap_endpoint(req: CumulativeGapRequest):
+    return {"status": "success", "data": cumulative_gap(req.gap_dict, req.buckets)}
+
+@router.post("/interest-rate-gap")
+async def interest_rate_gap_endpoint(req: InterestRateGapRequest):
+    return {"status": "success", "data": interest_rate_gap(req.rsa, req.rsl)}

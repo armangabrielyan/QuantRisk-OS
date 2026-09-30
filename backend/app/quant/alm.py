@@ -284,3 +284,35 @@ def bond_dv01_convexity(cashflows: list[float], times: list[float], yield_rate: 
         "modified_duration": float(mod_dur),
         "convexity": float(convexity)
     }
+
+
+def repricing_gap(assets: list[dict], liabilities: list[dict], buckets: list[str]) -> dict:
+    gap = {b: 0.0 for b in buckets}
+    for a in assets:
+        b = a.get('bucket', buckets[0])
+        if b in gap: gap[b] += float(a['amount'])
+    for l in liabilities:
+        b = l.get('bucket', buckets[0])
+        if b in gap: gap[b] -= float(l['amount'])
+    return {"gap": gap}
+
+def liquidity_gap(cash_inflows: list[dict], cash_outflows: list[dict], buckets: list[str]) -> dict:
+    gap = {b: 0.0 for b in buckets}
+    for i in cash_inflows:
+        b = i.get('bucket', buckets[0])
+        if b in gap: gap[b] += float(i['amount'])
+    for o in cash_outflows:
+        b = o.get('bucket', buckets[0])
+        if b in gap: gap[b] -= float(o['amount'])
+    return {"gap": gap}
+
+def cumulative_gap(gap_dict: dict, buckets: list[str]) -> dict:
+    cum_gap = {}
+    cum = 0.0
+    for b in buckets:
+        cum += gap_dict.get(b, 0.0)
+        cum_gap[b] = cum
+    return {"cumulative_gap": cum_gap}
+
+def interest_rate_gap(rsa: float, rsl: float) -> dict:
+    return {"gap": rsa - rsl, "ratio": rsa / rsl if rsl > 0 else float('inf')}

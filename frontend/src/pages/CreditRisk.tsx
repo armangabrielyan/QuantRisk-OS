@@ -9,7 +9,7 @@ import { fmtCurrency, fmtPct } from '@/lib/utils'
 import { useI18n } from '@/i18n'
 import Plot from 'react-plotly.js'
 
-type Tab = 'el' | 'merton' | 'alm' | 'liquidity' | 'cva' | 'scoring' | 'migration' | 'yieldCurve' | 'bondSens'
+type Tab = 'el' | 'merton' | 'alm' | 'liquidity' | 'cva' | 'scoring' | 'migration' | 'yieldCurve' | 'bondSens' | 'concentration'
 
 interface Exposure { id: number; name: string; pd: number; lgd: number; ead: number }
 
@@ -47,6 +47,7 @@ export default function CreditRisk() {
 
   const [migrationRatings, setMigrationRatings] = useState('AAA, AA, A, BBB')
   const [migrationResult, setMigrationResult] = useState<Record<string, unknown> | null>(null)
+  const [concResult, setConcResult] = useState<any>(null)
 
   
 
@@ -134,6 +135,7 @@ export default function CreditRisk() {
     { key: 'cva', label: t.newFeatures.counterpartyRisk },
     { key: 'scoring', label: t.newFeatures.scoringMetrics },
     { key: 'migration', label: t.newFeatures.ratingMigration },
+    { key: 'concentration', label: 'Concentration Risk' },
   ]
 
 
@@ -369,6 +371,41 @@ export default function CreditRisk() {
         </div>
       )}
 
+      {/* ── Concentration Risk ──────────────────────────────────────────────── */}
+      {activeTab === 'concentration' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Panel title="Concentration Actions">
+            <div className="space-y-3">
+              <Button onClick={async () => {
+                setLoading(true); setError(null);
+                try {
+                  const ws = exposures.map(e => e.ead);
+                  const [hhiRes, conRes] = await Promise.allSettled([
+                    creditRiskApi.hhi({ weights: ws }),
+                    creditRiskApi.concentration({ weights: ws })
+                  ]);
+                  const getRes = (res: any) => res.status === 'fulfilled' ? res.value.data.data : { error: res.reason?.message || 'Failed' };
+                  setConcResult({ hhi: getRes(hhiRes), conc: getRes(conRes) });
+                } catch(e:any) { setError(e.message) }
+                setLoading(false);
+              }} disabled={loading} className="w-full">
+                {loading ? t.common.calculating : 'Run Concentration & HHI'}
+              </Button>
+            </div>
+          </Panel>
+          <div className="space-y-4">
+            {loading && <LoadingSpinner message={t.common.calculating} />}
+            {concResult && !loading && (
+              <Panel title="Concentration Results">
+                <pre className="text-xs text-slate-300 bg-[#0a0a0f] p-4 rounded overflow-auto">
+                  {JSON.stringify(concResult, null, 2)}
+                </pre>
+              </Panel>
+            )}
           </div>
+        </div>
+      )}
+
+    </div>
   )
 }

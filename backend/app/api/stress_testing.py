@@ -108,3 +108,12 @@ async def apply_preset_scenario(req: PresetScenarioRequest):
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Calculation error: {str(e)}")
+
+class ScenarioComparisonRequest(BaseModel):
+    results: list[dict]
+
+from app.quant.stress_testing import scenario_comparison
+
+@router.post("/compare")
+async def scenario_comparison_endpoint(req: ScenarioComparisonRequest):
+    return {"status": "success", "data": scenario_comparison(req.results)}

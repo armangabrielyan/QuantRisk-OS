@@ -9,7 +9,7 @@ import { fmtCurrency, fmtPct } from '@/lib/utils'
 import { useI18n } from '@/i18n'
 import Plot from 'react-plotly.js'
 
-type Tab = 'el' | 'merton' | 'alm' | 'liquidity' | 'cva' | 'scoring' | 'migration' | 'yieldCurve' | 'bondSens'
+type Tab = 'el' | 'merton' | 'alm' | 'liquidity' | 'cva' | 'scoring' | 'migration' | 'yieldCurve' | 'bondSens' | 'advAlm'
 
 interface Exposure { id: number; name: string; pd: number; lgd: number; ead: number }
 
@@ -53,6 +53,32 @@ export default function ALMLiquidity() {
   const [bondYield, setBondYield] = useState(0.04)
   const [bondPrice, setBondPrice] = useState('')
   const [bondResult, setBondResult] = useState<Record<string, unknown> | null>(null)
+
+  const [advAlmRes, setAdvAlmRes] = useState<any>(null);
+  async function runAdvAlm() {
+    setLoading(true); setError(null);
+    try {
+      const buckets = ['1M', '3M', '6M', '1Y', '5Y'];
+      const assets = [{ bucket: '1M', amount: 500000 }, { bucket: '1Y', amount: 500000 }];
+      const liabilities = [{ bucket: '3M', amount: 400000 }, { bucket: '1Y', amount: 400000 }];
+      const gap_dict = { '1M': 500000, '3M': -400000, '6M': 0, '1Y': 100000, '5Y': 0 };
+
+      const [repRes, cumRes, irRes] = await Promise.allSettled([
+        almApi.repricingGap({ assets, liabilities, buckets }),
+        almApi.cumulativeGap({ gap_dict, buckets }),
+        almApi.interestRateGap({ rsa: 1000000, rsl: 800000 })
+      ]);
+      
+      const getRes = (res: any) => res.status === 'fulfilled' ? res.value.data.data : { error: res.reason?.message || 'Failed' };
+      setAdvAlmRes({
+        repricing: getRes(repRes),
+        cumulative: getRes(cumRes),
+        interestRate: getRes(irRes)
+      });
+    } catch(e:any) { setError(e.message) }
+    setLoading(false);
+  }
+
 
 
 
@@ -127,6 +153,7 @@ export default function ALMLiquidity() {
     { key: 'liquidity', label: ca.tabs.liquidity },
     { key: 'yieldCurve', label: t.newFeatures.yieldCurveAlm },
     { key: 'bondSens', label: t.newFeatures.bondSensitivities },
+    { key: 'advAlm', label: 'Adv ALM' },
   ]
 
   const rateShockBps = Math.round(almParams.rate_shock * 10000)
@@ -335,6 +362,14 @@ export default function ALMLiquidity() {
             )}
           </div>
         </div>
+      )}
+
+
+      {activeTab === 'advAlm' && (
+        <Panel title="Advanced ALM">
+          <Button onClick={runAdvAlm}>Run Interest Rate Gap</Button>
+          {advAlmRes && <pre className="text-xs text-slate-300 bg-[#0a0a0f] p-4 rounded mt-4 overflow-auto">{JSON.stringify(advAlmRes, null, 2)}</pre>}
+        </Panel>
       )}
 
     </div>

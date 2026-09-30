@@ -135,3 +135,72 @@ async def import_portfolio_csv(name: str, file: UploadFile = File(...), db: Sess
         return {'status': 'success', 'portfolio_id': portfolio.id, 'total_value': portfolio.total_value}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+class MarginalVaRRequest(BaseModel):
+    weights: list[float]
+    cov_matrix: list[list[float]]
+    confidence: float = 0.99
+
+class ComponentVaRRequest(BaseModel):
+    weights: list[float]
+    cov_matrix: list[list[float]]
+    portfolio_value: float
+    confidence: float = 0.99
+
+class IncrementalVaRRequest(BaseModel):
+    weights: list[float]
+    cov_matrix: list[list[float]]
+    new_asset_weight: float
+    new_asset_cov: list[float]
+    confidence: float = 0.99
+
+class VaRAttributionRequest(BaseModel):
+    weights: list[float]
+    component_vars: list[float]
+
+class CorrelationStressRequest(BaseModel):
+    weights: list[float]
+    cov_matrix: list[list[float]]
+    stress_factor: float = 1.5
+
+class DiversificationBenefitRequest(BaseModel):
+    weights: list[float]
+    cov_matrix: list[list[float]]
+    individual_vars: list[float]
+
+class PnLAttributionRequest(BaseModel):
+    pnl: float
+    factors: dict
+
+from app.quant.portfolio import (
+    marginal_var, component_var, incremental_var, var_attribution,
+    correlation_stress, diversification_benefit, pnl_attribution
+)
+
+@router.post("/marginal-var")
+async def marginal_var_endpoint(req: MarginalVaRRequest):
+    return {"status": "success", "data": marginal_var(req.weights, req.cov_matrix, req.confidence)}
+
+@router.post("/component-var")
+async def component_var_endpoint(req: ComponentVaRRequest):
+    return {"status": "success", "data": component_var(req.weights, req.cov_matrix, req.portfolio_value, req.confidence)}
+
+@router.post("/incremental-var")
+async def incremental_var_endpoint(req: IncrementalVaRRequest):
+    return {"status": "success", "data": incremental_var(req.weights, req.cov_matrix, req.new_asset_weight, req.new_asset_cov, req.confidence)}
+
+@router.post("/var-attribution")
+async def var_attribution_endpoint(req: VaRAttributionRequest):
+    return {"status": "success", "data": var_attribution(req.weights, req.component_vars)}
+
+@router.post("/correlation-stress")
+async def correlation_stress_endpoint(req: CorrelationStressRequest):
+    return {"status": "success", "data": correlation_stress(req.weights, req.cov_matrix, req.stress_factor)}
+
+@router.post("/diversification-benefit")
+async def diversification_benefit_endpoint(req: DiversificationBenefitRequest):
+    return {"status": "success", "data": diversification_benefit(req.weights, req.cov_matrix, req.individual_vars)}
+
+@router.post("/pnl-attribution")
+async def pnl_attribution_endpoint(req: PnLAttributionRequest):
+    return {"status": "success", "data": pnl_attribution(req.pnl, req.factors)}
