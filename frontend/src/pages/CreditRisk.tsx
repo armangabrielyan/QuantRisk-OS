@@ -136,7 +136,7 @@ export default function CreditRisk() {
     { key: 'migration', label: t.newFeatures.ratingMigration },
   ]
 
-  const rateShockBps = Math.round(almParams.rate_shock * 10000)
+
 
   return (
     <div className="space-y-4 sm:space-y-6">
