@@ -41,15 +41,20 @@ export default function CrisisSandbox() {
   const [presets, setPresets] = useState<Record<string, unknown>>({})
 
   async function loadPresets() {
-    if (Object.keys(presets).length > 0) return
+    if (Object.keys(presets).length > 0) return presets
     try {
       const res = await stressApi.scenarios()
-      setPresets(res.data.data.scenarios ?? {})
-    } catch {}
+      const p = res.data.data.scenarios ?? {}
+      setPresets(p)
+      return p
+    } catch {
+      return {}
+    }
   }
 
-  function applyPreset(key: string) {
-    const p = presets[key] as Record<string, unknown>
+  async function applyPreset(key: string) {
+    const loadedPresets = await loadPresets()
+    const p = loadedPresets[key] as Record<string, unknown>
     if (!p) return
     setShocks({
       equity_shock: p.equity_shock as number,
@@ -113,7 +118,13 @@ export default function CrisisSandbox() {
               onClick={async () => { await loadPresets(); applyPreset(key) }}
               className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all min-h-[40px] ${activePreset === key ? 'bg-emerald-600 border-emerald-500 text-white' : 'bg-[#1e2635] border-[#2a3548] text-slate-300 hover:border-emerald-500/40'}`}
             >
-              {key === '2008_gfc' ? '📉 GFC 2008' : key === '2020_covid' ? '🦠 COVID 2020' : '🏦 Banking 2023'}
+              {key === '2008_gfc' ? '📉 GFC 2008' : 
+               key === '2020_covid' ? '🦠 COVID 2020' : 
+               key === '2023_banking' ? '🏦 Banking 2023' : 
+               key === 'flash_crash' ? '🍂 Flash Crash' : 
+               key === 'commodity_shock' ? '🛢️ Oil Shock' : 
+               key === 'rate_hike' ? '📈 Rate Hike' : 
+               key === 'geopolitical' ? '🌍 Geopolitics' : key}
             </button>
           ))}
           {activePreset && (
