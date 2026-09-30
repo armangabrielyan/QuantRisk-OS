@@ -129,3 +129,40 @@ class SavedAnalysis(Base):
     result = Column(JSON, nullable=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class Instrument(Base):
+    __tablename__ = "instruments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    internal_id = Column(String(50), unique=True, index=True, nullable=False)
+    ticker = Column(String(20), index=True, nullable=False)
+    isin = Column(String(12), unique=True, index=True, nullable=True)
+    figi_cusip = Column(String(20), nullable=True)
+    currency = Column(String(3), nullable=False, default="USD")
+    asset_class = Column(String(50), nullable=False)
+    sector = Column(String(50), nullable=True)
+    country = Column(String(50), nullable=True)
+    issuer = Column(String(100), nullable=True)
+    rating = Column(String(10), nullable=True)
+    maturity = Column(DateTime, nullable=True)
+    provider_symbols = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    market_data = relationship("MarketData", back_populates="instrument")
+
+
+class MarketData(Base):
+    __tablename__ = "market_data"
+
+    id = Column(Integer, primary_key=True, index=True)
+    instrument_id = Column(Integer, ForeignKey("instruments.id"), nullable=False)
+    provider = Column(String(50), nullable=False)
+    timestamp = Column(DateTime, nullable=False)
+    price = Column(Float, nullable=True)
+    volume = Column(Float, nullable=True)
+    status = Column(String(20), default="LIVE")  # LIVE, DELAYED, STALE, MISSING
+    source_priority = Column(Integer, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    instrument = relationship("Instrument", back_populates="market_data")

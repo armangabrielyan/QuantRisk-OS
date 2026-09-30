@@ -120,3 +120,18 @@ async def portfolio_summary():
             "currency": "USD"
         }
     }
+
+from fastapi import UploadFile, File, Depends
+from sqlalchemy.orm import Session
+from app.database.session import get_db
+from app.services.data_architecture import PortfolioDataHubService
+
+@router.post('/import-csv')
+async def import_portfolio_csv(name: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    content = await file.read()
+    try:
+        text = content.decode('utf-8')
+        portfolio = PortfolioDataHubService.import_from_csv(db, text, name)
+        return {'status': 'success', 'portfolio_id': portfolio.id, 'total_value': portfolio.total_value}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

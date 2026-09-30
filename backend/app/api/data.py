@@ -184,3 +184,31 @@ async def get_sample_data(
             "n": sample["n"],
         },
     }
+
+from fastapi import Depends, File, UploadFile
+from sqlalchemy.orm import Session
+from app.database.session import get_db
+from app.schemas.data import InstrumentCreate, InstrumentResponse, DataQualityReport
+from app.services.data_architecture import InstrumentMasterService, MarketDataHubService, DataQualityCenterService
+
+@router.post('/instrument', response_model=InstrumentResponse)
+def create_instrument(instrument: InstrumentCreate, db: Session = Depends(get_db)):
+    return InstrumentMasterService.create_instrument(db, instrument)
+
+@router.get('/instrument/{ticker}', response_model=InstrumentResponse)
+def get_instrument(ticker: str, db: Session = Depends(get_db)):
+    inst = InstrumentMasterService.get_instrument(db, ticker)
+    if not inst:
+        raise HTTPException(status_code=404, detail='Instrument not found')
+    return inst
+
+@router.get('/market-hub/{ticker}')
+def fetch_market_hub_data(ticker: str, start: str, end: str, db: Session = Depends(get_db)):
+    try:
+        return MarketDataHubService.fetch_data(db, ticker, start, end)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.get('/quality/{ticker}', response_model=DataQualityReport)
+def get_data_quality(ticker: str, db: Session = Depends(get_db)):
+    return DataQualityCenterService.validate_instrument_data(db, ticker)
