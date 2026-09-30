@@ -25,7 +25,7 @@ class StressScenarioRequest(BaseModel):
 
 
 class PresetScenarioRequest(BaseModel):
-    scenario_key: Literal["2008_gfc", "2020_covid", "2023_banking"]
+    scenario_key: str
     portfolio_value: float = Field(10_000_000, gt=0)
     var_base: float = Field(150_000, gt=0)
     es_base: float = Field(210_000, gt=0)

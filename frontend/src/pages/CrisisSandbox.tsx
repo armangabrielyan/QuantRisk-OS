@@ -9,7 +9,7 @@ import { fmtCurrency, fmtPct } from '@/lib/utils'
 import { useI18n } from '@/i18n'
 import Plot from 'react-plotly.js'
 
-const PRESET_KEYS = ['2008_gfc', '2020_covid', '2023_banking'] as const
+const PRESET_KEYS = ['2008_gfc', '2020_covid', '2023_banking', 'flash_crash', 'commodity_shock', 'rate_hike', 'geopolitical'] as const
 
 export default function CrisisSandbox() {
   const { t } = useI18n()
@@ -79,13 +79,13 @@ export default function CrisisSandbox() {
 
   async function runComparison() {
     setLoading(true); setError(null); setCompResults([])
-    await loadPresets()
+    const loadedPresets = await loadPresets()
     try {
       const results = await Promise.all(
         PRESET_KEYS.map(key => {
-          const p = presets[key] as Record<string, unknown>
-          if (!p) return null
-          return stressApi.apply({ ...portfolio, equity_shock: p.equity_shock as number, vol_shock: p.vol_shock as number, rate_shock: p.rate_shock as number, credit_spread_shock: p.credit_spread_shock as number, liquidity_shock: p.liquidity_shock as number, deposit_outflow: p.deposit_outflow as number, scenario_name: (p.name as string) ?? key })
+          const p = loadedPresets[key] as any
+          if (!p || !p.shocks) return null
+          return stressApi.apply({ ...portfolio, equity_shock: p.shocks.equity_shock as number, vol_shock: p.shocks.vol_shock as number, rate_shock: p.shocks.rate_shock as number, credit_spread_shock: p.shocks.credit_spread_shock as number, liquidity_shock: p.shocks.liquidity_shock as number, deposit_outflow: p.shocks.deposit_outflow as number, scenario_name: (p.name as string) ?? key })
         }).filter(Boolean)
       )
       setCompResults(results.map(r => r?.data.data ?? {}))
