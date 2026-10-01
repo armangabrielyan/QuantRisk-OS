@@ -19,6 +19,7 @@ export const ru: Translations = {
     cfaTrainer: 'Обучение - CFA',
     crisisSandbox: 'Стресс-тестирование',
     reports: 'Отчёты',
+    auditTrail: 'Аудит системы',
     opRisk: 'Операционный риск',
     riskIntel: 'Монитор событий',
     appName: 'QuantRisk OS',

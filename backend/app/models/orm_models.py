@@ -245,3 +245,21 @@ class ModelRegistry(Base):
     change_history = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class AuditTrail(Base):
+    __tablename__ = "audit_trail"
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    user_id = Column(String(50), nullable=True) # or system
+    action = Column(String(100), nullable=False) # e.g., calculation, parameter_change, model_change, report_generation
+    entity_type = Column(String(50), nullable=False) 
+    entity_id = Column(String(50), nullable=True)
+    details = Column(JSON, nullable=True)
+    
+class RiskHistory(Base):
+    __tablename__ = "risk_history"
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(DateTime, default=datetime.utcnow)
+    portfolio_id = Column(Integer, nullable=True)
+    metrics = Column(JSON, nullable=False) # VaR, ES, PFE, CVA, DV01, LCR, NSFR, Stress Loss, Expected Loss
+    created_at = Column(DateTime, default=datetime.utcnow)

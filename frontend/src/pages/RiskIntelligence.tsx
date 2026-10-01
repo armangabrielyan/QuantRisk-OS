@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { AlertTriangle, Clock, Filter, Tag, Activity, Globe, Shield, Search } from 'lucide-react'
+import { AlertTriangle, Clock, Filter, Tag, Activity, Globe, Shield, Search, Send, Bot } from 'lucide-react'
 import { Panel } from '@/components/ui'
 import { api } from '@/services/api'
 import { useI18n } from '@/i18n'
@@ -24,6 +24,11 @@ export default function RiskIntelligence() {
   const [filter, setFilter] = useState('All')
   const [search, setSearch] = useState('')
 
+  // Copilot state
+  const [copilotQuery, setCopilotQuery] = useState('')
+  const [copilotResponse, setCopilotResponse] = useState<string | null>(null)
+  const [copilotLoading, setCopilotLoading] = useState(false)
+
   useEffect(() => {
     fetchEvents()
   }, [filter])
@@ -38,6 +43,21 @@ export default function RiskIntelligence() {
       console.error('Failed to load intelligence events', e)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleAskCopilot(e: React.FormEvent) {
+    e.preventDefault()
+    if (!copilotQuery.trim()) return
+    setCopilotLoading(true)
+    try {
+      const res = await api.post('/copilot/ask', { query: copilotQuery })
+      setCopilotResponse(res.data.answer)
+    } catch (e) {
+      console.error('Failed to ask copilot', e)
+      setCopilotResponse('Error: Failed to reach AI Risk Copilot.')
+    } finally {
+      setCopilotLoading(false)
     }
   }
 
@@ -72,11 +92,49 @@ export default function RiskIntelligence() {
           {t.nav.riskIntel}
         </h1>
         <p className="text-slate-400">
-          {lang === 'en' ? 'Macro-events, rating actions, and regulatory changes monitor.' : 'Лента макро-событий, рейтинговых действий и регуляторных изменений.'}
+          Macro-events monitor and AI Risk Copilot.
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+      {/* AI Risk Copilot Panel */}
+      <Panel title="AI Risk Copilot" className="border-indigo-500/30">
+        <div className="flex flex-col gap-4">
+          <div className="text-sm text-slate-400">
+            Ask questions like: "Why did VaR increase?", "What are the largest risks?", "What limits are breached?", "Prepare Risk Committee Commentary".
+          </div>
+          <form onSubmit={handleAskCopilot} className="relative flex-grow">
+            <Bot className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-400" />
+            <input
+              type="text"
+              value={copilotQuery}
+              onChange={e => setCopilotQuery(e.target.value)}
+              placeholder="Ask the AI Risk Copilot..."
+              className="w-full bg-[#0f1117] border border-indigo-500/30 rounded-lg pl-10 pr-12 py-3 text-sm focus:outline-none focus:border-indigo-400 transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={copilotLoading}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-indigo-400 hover:text-indigo-300 disabled:opacity-50"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
+
+          {copilotResponse && (
+            <div className="bg-[#161b27] border border-[#1e2635] rounded-xl p-4 mt-2">
+              <div className="flex items-start gap-3">
+                <Bot className="w-5 h-5 text-indigo-400 mt-0.5" />
+                <div className="text-sm text-slate-200 whitespace-pre-wrap">{copilotResponse}</div>
+              </div>
+            </div>
+          )}
+          {copilotLoading && (
+            <div className="text-sm text-slate-400 animate-pulse ml-10">Copilot is thinking...</div>
+          )}
+        </div>
+      </Panel>
+
+      <div className="flex flex-col sm:flex-row gap-4 mb-6 mt-8">
         <div className="flex bg-[#0f1117] rounded-lg p-1 border border-[#1e2635] overflow-x-auto">
           {CATEGORIES.map(cat => (
             <button
@@ -146,3 +204,4 @@ export default function RiskIntelligence() {
     </div>
   )
 }
+

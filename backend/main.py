@@ -188,6 +188,8 @@ from app.api.esg import router as esg_router
 from app.api.operational import router as operational_router
 from app.api.vendor import router as vendor_router
 from app.api.mrm import router as mrm_router
+from app.api.audit import router as audit_router
+from app.api.copilot import router as copilot_router
 
 app.include_router(market_risk_router)
 app.include_router(credit_risk_router)
@@ -205,4 +207,6 @@ app.include_router(esg_router)
 app.include_router(operational_router)
 app.include_router(vendor_router)
 app.include_router(mrm_router)
+app.include_router(audit_router)
+app.include_router(copilot_router)
 

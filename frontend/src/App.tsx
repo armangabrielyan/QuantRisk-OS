@@ -20,6 +20,7 @@ const RiskLimits = lazy(() => import('@/pages/RiskLimits'))
 const ESGRisk = lazy(() => import('@/pages/ESGRisk'))
 const ThirdPartyRisk = lazy(() => import('@/pages/ThirdPartyRisk'))
 const ModelRisk = lazy(() => import('@/pages/ModelRisk'))
+const AuditTrail = lazy(() => import('@/pages/AuditTrail'))
 
 function PageWrapper({ children }: { children: React.ReactNode }) {
   const { t } = useI18n()
@@ -59,6 +60,7 @@ export default function App() {
               <Route path="/risk-intelligence" element={<PageWrapper><RiskIntelligence /></PageWrapper>} />
               <Route path="/reports" element={<PageWrapper><Reports /></PageWrapper>} />
               <Route path="/limits" element={<PageWrapper><RiskLimits /></PageWrapper>} />
+              <Route path="/audit-trail" element={<PageWrapper><AuditTrail /></PageWrapper>} />
             </Routes>
           </div>
         </main>

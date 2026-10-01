@@ -23,6 +23,7 @@ const navItems = [
   { to: '/econometrics', icon: BarChart2, labelKey: 'econometrics' as const },
   { to: '/risk-intelligence', icon: Globe, labelKey: 'riskIntel' as const },
   { to: '/reports', icon: FileText, labelKey: 'reports' as const },
+  { to: '/audit-trail', icon: FileText, labelKey: 'auditTrail' as const },
   { to: '/cfa-prep', icon: BookOpen, labelKey: 'cfaTrainer' as const },
   { to: '/frm-trainer', icon: BookOpen, labelKey: 'frmTrainer' as const },
 ]

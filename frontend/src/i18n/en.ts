@@ -17,6 +17,7 @@ export const en = {
     cfaTrainer: 'Learning - CFA',
     crisisSandbox: 'Stress Testing',
     reports: 'Reports',
+    auditTrail: 'Audit Trail',
     opRisk: 'Operational Risk',
     riskIntel: 'Risk Intelligence',
     appName: 'QuantRisk OS',
