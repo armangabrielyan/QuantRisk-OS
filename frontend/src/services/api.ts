@@ -147,3 +147,26 @@ export const healthApi = {
   health: () => api.get('/health'),
   info: () => api.get('/info'),
 }
+
+// ── New Risk Domains ─────────────────────────────────────────────────────────
+
+export const esgApi = {
+  waci: (data: object) => api.post('/esg/waci', data),
+  getMetrics: () => api.get('/esg/metrics'),
+  createMetric: (data: object) => api.post('/esg/metrics', data),
+}
+
+export const opRiskExtendedApi = {
+  getIncidents: () => api.get('/operational/incidents'),
+  createIncident: (data: object) => api.post('/operational/incidents', data),
+}
+
+export const vendorApi = {
+  getVendors: () => api.get('/vendor'),
+  createVendor: (data: object) => api.post('/vendor', data),
+}
+
+export const mrmApi = {
+  getModels: () => api.get('/mrm/registry'),
+  createModel: (data: object) => api.post('/mrm/registry', data),
+}

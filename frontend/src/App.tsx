@@ -17,6 +17,9 @@ const OperationalRisk = lazy(() => import('@/pages/OperationalRisk'))
 const RiskIntelligence = lazy(() => import('@/pages/RiskIntelligence'))
 const Reports = lazy(() => import('@/pages/Reports'))
 const RiskLimits = lazy(() => import('@/pages/RiskLimits'))
+const ESGRisk = lazy(() => import('@/pages/ESGRisk'))
+const ThirdPartyRisk = lazy(() => import('@/pages/ThirdPartyRisk'))
+const ModelRisk = lazy(() => import('@/pages/ModelRisk'))
 
 function PageWrapper({ children }: { children: React.ReactNode }) {
   const { t } = useI18n()
@@ -46,6 +49,9 @@ export default function App() {
               <Route path="/alm-liquidity" element={<PageWrapper><ALMLiquidity /></PageWrapper>} />
               <Route path="/econometrics" element={<PageWrapper><Econometrics /></PageWrapper>} />
               <Route path="/portfolio" element={<PageWrapper><Portfolio /></PageWrapper>} />
+              <Route path="/esg" element={<PageWrapper><ESGRisk /></PageWrapper>} />
+              <Route path="/third-party" element={<PageWrapper><ThirdPartyRisk /></PageWrapper>} />
+              <Route path="/model-risk" element={<PageWrapper><ModelRisk /></PageWrapper>} />
               <Route path="/cfa-prep" element={<PageWrapper><FRMTrainer mode="cfa" /></PageWrapper>} />
               <Route path="/frm-trainer" element={<PageWrapper><FRMTrainer mode="frm" /></PageWrapper>} />
               <Route path="/stress-testing" element={<PageWrapper><CrisisSandbox /></PageWrapper>} />
@@ -60,3 +66,4 @@ export default function App() {
     </BrowserRouter>
   )
 }
+

@@ -200,3 +200,48 @@ class RiskAppetite(Base):
     metrics = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class ESGMetric(Base):
+    __tablename__ = "esg_metrics"
+    id = Column(Integer, primary_key=True, index=True)
+    entity_id = Column(String(50), nullable=False)
+    carbon_exposure = Column(Float, nullable=True)
+    waci = Column(Float, nullable=True)
+    climate_stress_result = Column(JSON, nullable=True)
+    transition_risk_score = Column(Float, nullable=True)
+    physical_risk_score = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class CyberIncident(Base):
+    __tablename__ = "cyber_incidents"
+    id = Column(Integer, primary_key=True, index=True)
+    incident_date = Column(DateTime, nullable=False)
+    incident_type = Column(String(100), nullable=False)
+    severity = Column(String(20), nullable=False)
+    description = Column(Text, nullable=True)
+    operational_loss = Column(Float, nullable=True)
+    status = Column(String(20), default="OPEN")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Vendor(Base):
+    __tablename__ = "vendors"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    criticality = Column(String(20), nullable=False)
+    dependency_risk_score = Column(Float, nullable=True)
+    incident_history = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class ModelRegistry(Base):
+    __tablename__ = "model_registry"
+    id = Column(Integer, primary_key=True, index=True)
+    model_name = Column(String(100), nullable=False)
+    version = Column(String(20), nullable=False)
+    status = Column(String(20), default="DEVELOPMENT")
+    validation_results = Column(JSON, nullable=True)
+    backtesting_metrics = Column(JSON, nullable=True)
+    issues = Column(JSON, nullable=True)
+    approval_workflow_status = Column(String(50), nullable=True)
+    change_history = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

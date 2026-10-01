@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { opRiskApi } from '@/services/api'
+import { opRiskApi, opRiskExtendedApi } from '@/services/api'
+import { useEffect } from 'react'
 import {
   MetricCard, Panel, SectionHeader, LoadingSpinner, ErrorMessage,
   FormField, Input, Button, Tabs,
@@ -7,7 +8,7 @@ import {
 import { fmtCurrency } from '@/lib/utils'
 import { useI18n } from '@/i18n'
 
-type Tab = 'sma'
+type Tab = 'sma' | 'cyber'
 
 export default function OperationalRisk() {
   const { t } = useI18n()
@@ -15,6 +16,15 @@ export default function OperationalRisk() {
   const [activeTab, setActiveTab] = useState<Tab>('sma')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [incidents, setIncidents] = useState<any[]>([])
+  
+  useEffect(() => {
+    if (activeTab === 'cyber') {
+      opRiskExtendedApi.getIncidents().then(res => setIncidents(res.data)).catch(e => setError(e.message))
+    }
+  }, [activeTab])
+
 
   // SMA Capital state
   const [bic, setBic] = useState(5000000)
@@ -32,13 +42,35 @@ export default function OperationalRisk() {
 
   const tabs = [
     { key: 'sma', label: t.newFeatures.baselSma },
+    { key: 'cyber', label: 'Cyber & IT Risk' },
   ]
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <SectionHeader title={t.nav.opRisk} subtitle="Basel III Operational Risk Capital Framework" />
+      <SectionHeader title={t.nav.opRisk} subtitle="Basel III Operational Risk Capital Framework & Cyber Risk" />
       <Tabs tabs={tabs} active={activeTab} onChange={(k) => { setActiveTab(k as Tab); setError(null) }} />
       {error && <ErrorMessage message={error} onRetry={() => setError(null)} />}
+
+            {activeTab === 'cyber' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-3 space-y-4">
+             <div className="grid grid-cols-3 gap-4">
+                <MetricCard label="Active Cyber Incidents" value={incidents.length.toString()} status="warn" />
+                <MetricCard label="Open Vulnerabilities" value="15" status="fail" />
+                <MetricCard label="Service Availability" value="99.98%" status="pass" />
+             </div>
+             <Panel title="Operational Loss Events (Business Continuity)">
+                <div className="text-sm text-slate-300">
+                  {incidents.length > 0 ? (
+                    incidents.map((inc, i) => (
+                      <div key={i}>{inc.incident_type}: {inc.severity}</div>
+                    ))
+                  ) : "No recent operational loss events recorded."}
+                </div>
+             </Panel>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'sma' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

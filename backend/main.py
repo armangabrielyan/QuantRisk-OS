@@ -184,6 +184,10 @@ from app.api.frm_trainer import router as frm_trainer_router
 from app.api.op_risk import router as op_risk_router
 from app.api.risk_intelligence import router as risk_intelligence_router
 from app.api.risk_limits import router as risk_limits_router
+from app.api.esg import router as esg_router
+from app.api.operational import router as operational_router
+from app.api.vendor import router as vendor_router
+from app.api.mrm import router as mrm_router
 
 app.include_router(market_risk_router)
 app.include_router(credit_risk_router)
@@ -197,3 +201,8 @@ app.include_router(frm_trainer_router)
 app.include_router(op_risk_router)
 app.include_router(risk_intelligence_router)
 app.include_router(risk_limits_router, prefix="/api")
+app.include_router(esg_router)
+app.include_router(operational_router)
+app.include_router(vendor_router)
+app.include_router(mrm_router)
+
