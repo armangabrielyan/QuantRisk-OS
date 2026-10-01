@@ -5,7 +5,8 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import List, Optional
 import re
-import google.generativeai as genai
+import urllib.request
+import urllib.error
 
 router = APIRouter(prefix="/api/assistant", tags=["Assistant"])
 
@@ -22,10 +23,8 @@ class AssistantResponse(BaseModel):
     message: str
     actions: List[Action]
 
-# Retrieve the key from env (we will set this when the user gives it)
+# Retrieve the key from env
 api_key = os.getenv("GEMINI_API_KEY", "")
-if api_key:
-    genai.configure(api_key=api_key)
 
 SYSTEM_PROMPT = """You are the AI Risk Navigator for QuantRisk OS, an enterprise risk management platform.
 Your job is to understand the user's intent and map it to the closest available platform modules.
@@ -64,20 +63,32 @@ async def ask_assistant(req: AssistantQuery):
         return run_heuristic_fallback(q, is_ru)
         
     try:
-        model = genai.GenerativeModel(
-            'gemini-1.5-flash',
-            system_instruction=SYSTEM_PROMPT,
-            generation_config={"response_mime_type": "application/json"}
-        )
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key={api_key}"
         
-        response = model.generate_content(req.query)
-        result_str = response.text
-        data = json.loads(result_str)
+        payload = {
+            "system_instruction": {
+                "parts": [{"text": SYSTEM_PROMPT}]
+            },
+            "contents": [
+                {"parts": [{"text": req.query}]}
+            ],
+            "generationConfig": {
+                "responseMimeType": "application/json"
+            }
+        }
+        
+        req_obj = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req_obj) as response:
+            result = json.loads(response.read().decode('utf-8'))
+            
+        result_text = result["candidates"][0]["content"]["parts"][0]["text"]
+        data = json.loads(result_text)
         
         actions = [Action(**a) for a in data.get("actions", [])]
         return AssistantResponse(message=data.get("message", "Error parsing response"), actions=actions)
         
     except Exception as e:
+        print(f"Gemini API error: {e}")
         return run_heuristic_fallback(q, is_ru)
 
 def run_heuristic_fallback(q: str, is_ru: bool):
