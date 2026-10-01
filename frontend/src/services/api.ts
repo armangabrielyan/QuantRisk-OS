@@ -108,7 +108,7 @@ export const stressApi = {
   scenarios: () => api.get('/stress-testing/scenarios'),
   apply: (data: object) => api.post('/stress-testing/apply', data),
   applyPreset: (data: object) => api.post('/stress-testing/apply-preset', data),
-  scenarioComparison: (data: object) => api.post('/stress-testing/scenario-comparison', data),
+  scenarioComparison: (data: object) => api.post('/stress-testing/compare', data),
 }
 
 // ── FRM Trainer ───────────────────────────────────────────────────────────────

@@ -112,3 +112,19 @@ async def adv_metrics_endpoint(req: AdvMetricsRequest):
 @router.post("/transition-matrix")
 async def transition_matrix_endpoint(req: TransitionRequest):
     return {"status": "success", "data": transition_matrix_multiplier(req.current_ratings, req.transition_matrix)}
+
+class ConcentrationRequest(BaseModel):
+    weights: list[float]
+
+from app.quant.credit_risk import credit_concentration, country_sector_hhi
+
+@router.post("/concentration")
+async def concentration_endpoint(req: ConcentrationRequest):
+    # Dummy exposures format mapping
+    exposures = [{"ead": w} for w in req.weights]
+    return {"status": "success", "data": credit_concentration(exposures)}
+
+@router.post("/hhi")
+async def hhi_endpoint(req: ConcentrationRequest):
+    exposures = [{"ead": w} for w in req.weights]
+    return {"status": "success", "data": country_sector_hhi(exposures)}

@@ -1,0 +1,180 @@
+/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+INFO:     Started server process [1173]
+INFO:     Waiting for application startup.
+2026-10-01 17:24:06,553 - main - INFO - QuantRisk OS starting up...
+2026-10-01 17:24:06,558 - main - INFO - Database tables created.
+2026-10-01 17:24:06,589 - main - INFO - FRM questions already present: 33 questions.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-10-01 17:25:19,402 - main - ERROR - Unhandled error [POST http://127.0.0.1:8000/api/portfolio/incremental-var]: name 'get_cov' is not defined
+Traceback (most recent call last):
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/routing.py", line 121, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/routing.py", line 107, in app
+    response = await f(request)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/routing.py", line 426, in app
+    raw_response = await run_endpoint_function(
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/routing.py", line 314, in run_endpoint_function
+    return await dependant.call(**values)
+  File "/Users/user/Desktop/risk-matrix-os/backend/app/api/portfolio.py", line 202, in incremental_var_endpoint
+    cov = get_cov(req)
+NameError: name 'get_cov' is not defined
+INFO:     127.0.0.1:50300 - "POST /api/portfolio/incremental-var HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/uvicorn/protocols/http/h11_impl.py", line 409, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/applications.py", line 1138, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/routing.py", line 121, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/routing.py", line 107, in app
+    response = await f(request)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/routing.py", line 426, in app
+    raw_response = await run_endpoint_function(
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/routing.py", line 314, in run_endpoint_function
+    return await dependant.call(**values)
+  File "/Users/user/Desktop/risk-matrix-os/backend/app/api/portfolio.py", line 202, in incremental_var_endpoint
+    cov = get_cov(req)
+NameError: name 'get_cov' is not defined
+2026-10-01 17:26:37,515 - main - ERROR - Unhandled error [POST http://127.0.0.1:8000/api/portfolio/pnl-attribution]: 'NoneType' object has no attribute 'values'
+Traceback (most recent call last):
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/routing.py", line 121, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/routing.py", line 107, in app
+    response = await f(request)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/routing.py", line 426, in app
+    raw_response = await run_endpoint_function(
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/routing.py", line 314, in run_endpoint_function
+    return await dependant.call(**values)
+  File "/Users/user/Desktop/risk-matrix-os/backend/app/api/portfolio.py", line 227, in pnl_attribution_endpoint
+    c_vars = res.get("component_vars", [0.0]*len(req.weights))
+  File "/Users/user/Desktop/risk-matrix-os/backend/app/quant/portfolio.py", line 433, in pnl_attribution
+    total_factor_impact = sum(factors.values())
+AttributeError: 'NoneType' object has no attribute 'values'
+INFO:     127.0.0.1:50363 - "POST /api/portfolio/pnl-attribution HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/uvicorn/protocols/http/h11_impl.py", line 409, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/applications.py", line 1138, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/routing.py", line 121, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/routing.py", line 107, in app
+    response = await f(request)
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/routing.py", line 426, in app
+    raw_response = await run_endpoint_function(
+  File "/Users/user/Desktop/risk-matrix-os/backend/.venv/lib/python3.9/site-packages/fastapi/routing.py", line 314, in run_endpoint_function
+    return await dependant.call(**values)
+  File "/Users/user/Desktop/risk-matrix-os/backend/app/api/portfolio.py", line 227, in pnl_attribution_endpoint
+    c_vars = res.get("component_vars", [0.0]*len(req.weights))
+  File "/Users/user/Desktop/risk-matrix-os/backend/app/quant/portfolio.py", line 433, in pnl_attribution
+    total_factor_impact = sum(factors.values())
+AttributeError: 'NoneType' object has no attribute 'values'
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-10-01 17:27:28,833 - main - INFO - QuantRisk OS shutdown complete.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [1173]

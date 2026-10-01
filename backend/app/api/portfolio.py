@@ -1,3 +1,5 @@
+import numpy as np
+from typing import Optional
 """QuantRisk OS - Portfolio Analytics API Router"""
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, field_validator
@@ -6,6 +8,21 @@ from typing import List
 from app.quant.portfolio import portfolio_analytics, efficient_frontier, maximum_drawdown
 
 router = APIRouter(prefix="/api/portfolio", tags=["Portfolio Analytics"])
+
+def get_cov(req):
+    if hasattr(req, 'cov_matrix') and req.cov_matrix:
+        return req.cov_matrix
+    if hasattr(req, 'returns_matrix') and req.returns_matrix:
+        import numpy as np
+        # Input is typically (n_assets, n_periods). np.cov expects (n_features, n_samples)
+        # We need to make sure we treat rows as assets.
+        arr = np.array(req.returns_matrix)
+        if arr.shape[0] != len(req.weights):
+            arr = arr.T
+        return np.cov(arr).tolist()
+    return []
+
+
 
 
 class PortfolioAnalyticsRequest(BaseModel):
@@ -138,29 +155,35 @@ async def import_portfolio_csv(name: str, file: UploadFile = File(...), db: Sess
 
 class MarginalVaRRequest(BaseModel):
     weights: list[float]
-    cov_matrix: list[list[float]]
+    cov_matrix: Optional[list[list[float]]] = None
+    returns_matrix: Optional[list[list[float]]] = None
     confidence: float = 0.99
 
 class ComponentVaRRequest(BaseModel):
     weights: list[float]
-    cov_matrix: list[list[float]]
-    portfolio_value: float
+    cov_matrix: Optional[list[list[float]]] = None
+    returns_matrix: Optional[list[list[float]]] = None
+    portfolio_value: float = 1_000_000.0
     confidence: float = 0.99
 
 class IncrementalVaRRequest(BaseModel):
     weights: list[float]
-    cov_matrix: list[list[float]]
-    new_asset_weight: float
-    new_asset_cov: list[float]
+    cov_matrix: Optional[list[list[float]]] = None
+    returns_matrix: Optional[list[list[float]]] = None
+    new_asset_weight: float = 0.1
+    new_asset_cov: Optional[list[float]] = None
     confidence: float = 0.99
 
 class VaRAttributionRequest(BaseModel):
     weights: list[float]
-    component_vars: list[float]
+    component_vars: Optional[list[float]] = None
+    returns_matrix: Optional[list[list[float]]] = None
 
 class CorrelationStressRequest(BaseModel):
     weights: list[float]
-    cov_matrix: list[list[float]]
+    cov_matrix: Optional[list[list[float]]] = None
+    returns_matrix: Optional[list[list[float]]] = None
+    stress_factors: Optional[list[float]] = [1.5]
     stress_factor: float = 1.5
 
 class DiversificationBenefitRequest(BaseModel):
@@ -169,8 +192,10 @@ class DiversificationBenefitRequest(BaseModel):
     individual_vars: list[float]
 
 class PnLAttributionRequest(BaseModel):
-    pnl: float
-    factors: dict
+    pnl: float = 10000.0
+    factors: Optional[dict] = None
+    returns_matrix: Optional[list[list[float]]] = None
+    weights: Optional[list[float]] = None
 
 from app.quant.portfolio import (
     marginal_var, component_var, incremental_var, var_attribution,
@@ -179,23 +204,34 @@ from app.quant.portfolio import (
 
 @router.post("/marginal-var")
 async def marginal_var_endpoint(req: MarginalVaRRequest):
-    return {"status": "success", "data": marginal_var(req.weights, req.cov_matrix, req.confidence)}
+    cov = get_cov(req)
+    return {"status": "success", "data": marginal_var(req.weights, cov, req.confidence)}
 
 @router.post("/component-var")
 async def component_var_endpoint(req: ComponentVaRRequest):
-    return {"status": "success", "data": component_var(req.weights, req.cov_matrix, req.portfolio_value, req.confidence)}
+    cov = get_cov(req)
+    return {"status": "success", "data": component_var(req.weights, cov, req.portfolio_value, req.confidence)}
 
 @router.post("/incremental-var")
 async def incremental_var_endpoint(req: IncrementalVaRRequest):
-    return {"status": "success", "data": incremental_var(req.weights, req.cov_matrix, req.new_asset_weight, req.new_asset_cov, req.confidence)}
+    cov = get_cov(req)
+    n_cov = req.new_asset_cov or [0.0]*len(req.weights)
+    return {"status": "success", "data": incremental_var(req.weights, cov, req.new_asset_weight, n_cov, req.confidence)}
 
 @router.post("/var-attribution")
 async def var_attribution_endpoint(req: VaRAttributionRequest):
-    return {"status": "success", "data": var_attribution(req.weights, req.component_vars)}
+    c_vars = req.component_vars
+    if not c_vars and req.returns_matrix:
+        cov = get_cov(req)
+        res = component_var(req.weights, cov, 1000000.0, 0.99)
+        c_vars = res.get("component_vars", [0.0]*len(req.weights))
+    return {"status": "success", "data": var_attribution(req.weights, c_vars)}
 
 @router.post("/correlation-stress")
 async def correlation_stress_endpoint(req: CorrelationStressRequest):
-    return {"status": "success", "data": correlation_stress(req.weights, req.cov_matrix, req.stress_factor)}
+    cov = get_cov(req)
+    sf = req.stress_factors[0] if req.stress_factors else req.stress_factor
+    return {"status": "success", "data": correlation_stress(req.weights, cov, sf)}
 
 @router.post("/diversification-benefit")
 async def diversification_benefit_endpoint(req: DiversificationBenefitRequest):
@@ -203,4 +239,5 @@ async def diversification_benefit_endpoint(req: DiversificationBenefitRequest):
 
 @router.post("/pnl-attribution")
 async def pnl_attribution_endpoint(req: PnLAttributionRequest):
-    return {"status": "success", "data": pnl_attribution(req.pnl, req.factors)}
+    factors = req.factors or {"Market": 0.5, "Sector": 0.3, "Idiosyncratic": 0.2}
+    return {"status": "success", "data": pnl_attribution(req.pnl, factors)}
