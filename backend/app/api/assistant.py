@@ -1,8 +1,11 @@
 
+import os
+import json
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import List, Optional
 import re
+from openai import AsyncOpenAI
 
 router = APIRouter(prefix="/api/assistant", tags=["Assistant"])
 
@@ -19,12 +22,68 @@ class AssistantResponse(BaseModel):
     message: str
     actions: List[Action]
 
+client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
+
+SYSTEM_PROMPT = """You are the AI Risk Navigator for QuantRisk OS, an enterprise risk management platform.
+Your job is to understand the user's intent and map it to the closest available platform modules.
+If the exact feature is missing, say so politely and suggest the closest available tool.
+ALWAYS respond in the SAME language as the user's query (e.g., Russian if they ask in Russian).
+Do NOT invent financial numbers or make calculations yourself. Only navigate or explain.
+
+Available Modules & Routes:
+1. Market Risk (/market-risk): VaR (Monte Carlo, Historical, Parametric), Expected Shortfall, Volatility.
+2. Credit Risk (/credit-risk): Expected Loss, PD, LGD, EAD, Merton Model, Credit Concentration, HHI.
+3. ALM & Liquidity (/alm-liquidity): DV01, LCR, NSFR, Duration Gap, Repricing Gap.
+4. Portfolio Risk (/portfolio): Marginal VaR, Component VaR, Incremental VaR, VaR Attribution, Diversification.
+5. Stress Testing (/stress-testing): Custom Scenarios, Stress P&L, Scenario Comparison.
+6. Risk Limits (/limits): Warning/Hard Limits, Limit Breaches.
+7. Reports (/reports): Risk Committee Report, Executive Risk Summary.
+8. ESG & Climate Risk (/esg): Carbon Exposure, WACI, Climate Stress.
+9. Operational Risk (/op-risk): Cyber Incidents, Loss Events.
+10. Third-Party Risk (/third-party): Vendor Risk.
+11. Model Risk Management (/model-risk): Model Registry, Validation.
+
+You must ALWAYS output valid JSON strictly matching this schema:
+{
+  "message": "Your conversational response explaining the tools.",
+  "actions": [
+     {"label": "Button Label", "route": "/route-name", "action_type": "navigate"}
+  ]
+}
+"""
+
 @router.post("/ask", response_model=AssistantResponse)
 async def ask_assistant(req: AssistantQuery):
     q = req.query.lower()
-    
-    # Detect language preference
     is_ru = bool(re.search('[а-яА-Я]', q))
+    
+    if not client.api_key:
+        # Graceful fallback logic to purely rule-based processing if no API key is provided
+        return run_heuristic_fallback(q, is_ru)
+        
+    try:
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": req.query}
+            ],
+            response_format={ "type": "json_object" },
+            temperature=0.3
+        )
+        
+        result_str = response.choices[0].message.content
+        data = json.loads(result_str)
+        
+        actions = [Action(**a) for a in data.get("actions", [])]
+        return AssistantResponse(message=data.get("message", "Error parsing response"), actions=actions)
+        
+    except Exception as e:
+        # Fallback to heuristics if API call fails
+        return run_heuristic_fallback(q, is_ru)
+
+def run_heuristic_fallback(q: str, is_ru: bool):
+    """Fallback logic if OPENAI_API_KEY is not configured"""
     
     if any(k in q for k in ["monte carlo", "монте карло", "монте-карло"]):
         return AssistantResponse(
@@ -57,45 +116,6 @@ async def ask_assistant(req: AssistantQuery):
 - Risk Limits: No breaches
 - Alerts: None"
         return AssistantResponse(message=msg_ru if is_ru else msg_en, actions=[])
-        
-    elif any(k in q for k in ["biggest risk", "largest risk", "главный риск", "самый большой риск", "основной риск"]):
-        msg = "Ваши основные риски связаны с высокой утилизацией VaR в технологическом секторе." if is_ru else "Your largest risks currently stem from high VaR utilization in the technology sector."
-        return AssistantResponse(message=msg, actions=[Action(label="Посмотреть Portfolio Risk" if is_ru else "Check Portfolio Risk", route="/portfolio")])
-        
-    elif any(k in q for k in ["liquidity", "ликвидность", "ликвидности"]):
-        msg = "Переход к анализу ALM и Ликвидности." if is_ru else "Navigating to ALM & Liquidity analysis."
-        return AssistantResponse(message=msg, actions=[Action(label="Открыть ALM & Liquidity" if is_ru else "Open ALM & Liquidity", route="/alm-liquidity")])
-        
-    elif any(k in q for k in ["contribute", "contribution", "влияют", "вклад"]):
-        msg = "Чтобы увидеть, какие позиции вносят наибольший вклад в VaR, откройте Portfolio Analytics." if is_ru else "To see which positions contribute most to VaR, open Portfolio Analytics."
-        return AssistantResponse(message=msg, actions=[Action(label="Открыть Portfolio Analytics" if is_ru else "Open Portfolio Analytics", route="/portfolio")])
-        
-    elif any(k in q for k in ["stress", "стресс", "шок"]):
-        msg = "Рекомендуемые инструменты:
-ALM & Liquidity → DV01
-Stress Testing → Custom Scenario" if is_ru else "Recommended tools:
-ALM & Liquidity → DV01
-Stress Testing → Custom Scenario"
-        return AssistantResponse(
-            message=msg,
-            actions=[
-                Action(label="Открыть DV01" if is_ru else "Open DV01", route="/alm-liquidity"),
-                Action(label="Открыть Stress Testing" if is_ru else "Open Stress Testing", route="/stress-testing")
-            ]
-        )
-    elif any(k in q for k in ["limit", "лимит"]):
-        msg = "Показываю контрагентов, близких к лимитам." if is_ru else "Showing counterparties close to their limits."
-        return AssistantResponse(message=msg, actions=[Action(label="Открыть Лимиты" if is_ru else "Open Risk Limits", route="/limits")])
-        
-    elif any(k in q for k in ["compare", "сравнить", "со вчера", "прошл"]):
-        msg = "Вы можете сравнить исторические метрики VaR в модуле Market Risk." if is_ru else "You can compare historical VaR metrics in the Market Risk module."
-        return AssistantResponse(message=msg, actions=[Action(label="Открыть Market Risk" if is_ru else "Open Market Risk", route="/market-risk")])
-        
-    elif any(k in q for k in ["committee", "комитет", "отчет", "report"]):
-        msg = "Подготовка отчета для Комитета по рискам." if is_ru else "Preparing a Risk Committee Report."
-        return AssistantResponse(message=msg, actions=[Action(label="Открыть Отчеты" if is_ru else "Open Reports", route="/reports")])
-        
-    # NEW RULES specifically for trades / general risk calculation queries
     elif any(k in q for k in ["просчитать риск", "риск моей сделки", "оценить сделку", "риск сделки", "calculate risk", "trade risk", "new trade"]):
         msg = "Для оценки риска новой сделки я рекомендую:
 1. Зайти в **Portfolio Risk**, чтобы увидеть, как сделка повлияет на общую маржинальную диверсификацию (Marginal VaR).
@@ -109,20 +129,11 @@ Stress Testing → Custom Scenario"
                 Action(label="Перейти в Market Risk" if is_ru else "Open Market Risk", route="/market-risk")
             ]
         )
-        
-    elif any(k in q for k in ["var", "вар"]):
-        return AssistantResponse(
-            message="Market Risk → VaR",
-            actions=[Action(label="Открыть Market Risk" if is_ru else "Open Market Risk", route="/market-risk")]
-        )
     
-    # Smarter Fallback
-    fallback_ru = "Я пока не уверен, какой именно модуль вам нужен.
-Для расчета общих рыночных рисков используйте **Market Risk**.
-Для анализа влияния конкретной сделки — **Portfolio Analytics**."
-    fallback_en = "I'm not exactly sure which module you need.
-For general market risks, use **Market Risk**.
-To analyze a specific trade's impact, use **Portfolio Analytics**."
+    fallback_ru = "⚠️ OPENAI_API_KEY не настроен, поэтому я использую базовые правила. 
+Для расчета риска сделки вы можете использовать **Market Risk** или **Portfolio Analytics**."
+    fallback_en = "⚠️ OPENAI_API_KEY is not configured, so I am running on basic rules. 
+For trade risk analysis, use **Market Risk** or **Portfolio Analytics**."
     
     return AssistantResponse(
         message=fallback_ru if is_ru else fallback_en,
