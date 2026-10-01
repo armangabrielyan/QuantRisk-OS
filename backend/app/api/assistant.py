@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import List, Optional
 import re
-from openai import AsyncOpenAI
+import google.generativeai as genai
 
 router = APIRouter(prefix="/api/assistant", tags=["Assistant"])
 
@@ -22,7 +22,10 @@ class AssistantResponse(BaseModel):
     message: str
     actions: List[Action]
 
-client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
+# Retrieve the key from env (we will set this when the user gives it)
+api_key = os.getenv("GEMINI_API_KEY", "")
+if api_key:
+    genai.configure(api_key=api_key)
 
 SYSTEM_PROMPT = """You are the AI Risk Navigator for QuantRisk OS, an enterprise risk management platform.
 Your job is to understand the user's intent and map it to the closest available platform modules.
@@ -57,34 +60,27 @@ async def ask_assistant(req: AssistantQuery):
     q = req.query.lower()
     is_ru = bool(re.search('[а-яА-Я]', q))
     
-    if not client.api_key:
-        # Graceful fallback logic to purely rule-based processing if no API key is provided
+    if not api_key:
         return run_heuristic_fallback(q, is_ru)
         
     try:
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": req.query}
-            ],
-            response_format={ "type": "json_object" },
-            temperature=0.3
+        model = genai.GenerativeModel(
+            'gemini-1.5-flash',
+            system_instruction=SYSTEM_PROMPT,
+            generation_config={"response_mime_type": "application/json"}
         )
         
-        result_str = response.choices[0].message.content
+        response = model.generate_content(req.query)
+        result_str = response.text
         data = json.loads(result_str)
         
         actions = [Action(**a) for a in data.get("actions", [])]
         return AssistantResponse(message=data.get("message", "Error parsing response"), actions=actions)
         
     except Exception as e:
-        # Fallback to heuristics if API call fails
         return run_heuristic_fallback(q, is_ru)
 
 def run_heuristic_fallback(q: str, is_ru: bool):
-    """Fallback logic if OPENAI_API_KEY is not configured"""
-    
     if any(k in q for k in ["monte carlo", "монте карло", "монте-карло"]):
         return AssistantResponse(
             message="Рыночный риск → VaR → Монте-Карло" if is_ru else "Market Risk → VaR → Monte Carlo",
@@ -130,9 +126,9 @@ def run_heuristic_fallback(q: str, is_ru: bool):
             ]
         )
     
-    fallback_ru = "⚠️ OPENAI_API_KEY не настроен, поэтому я использую базовые правила. 
+    fallback_ru = "⚠️ GEMINI_API_KEY не настроен. 
 Для расчета риска сделки вы можете использовать **Market Risk** или **Portfolio Analytics**."
-    fallback_en = "⚠️ OPENAI_API_KEY is not configured, so I am running on basic rules. 
+    fallback_en = "⚠️ GEMINI_API_KEY is not configured. 
 For trade risk analysis, use **Market Risk** or **Portfolio Analytics**."
     
     return AssistantResponse(
