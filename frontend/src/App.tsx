@@ -3,6 +3,7 @@ import { Suspense, lazy } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { LoadingSpinner } from '@/components/ui'
 import { useI18n } from '@/i18n'
+import { RiskAssistant } from '@/components/RiskAssistant'
 
 // Lazy-load pages for fast initial load
 const Overview = lazy(() => import('@/pages/Overview'))
@@ -64,6 +65,7 @@ export default function App() {
             </Routes>
           </div>
         </main>
+        <RiskAssistant />
       </div>
     </BrowserRouter>
   )
